@@ -1,0 +1,51 @@
+#################################
+# Unreal Engine Generated Files #
+#################################
+/[Bb]uild
+/[Bb]uilds
+/Binaries
+/DerivedDataCache
+/Intermediate
+/Saved
+
+#################################
+# Visual Studio Generated Files #
+#################################
+# Cache Directory
+.vs
+# User Specific Files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+# CPP Cache Files
+*.VC.db
+*.opendb
+*.opensdf
+*.sdf
+# Solution Files
+*.sln
+# VSCode Cache Directory
+.vscode
+# VSCode History Files
+**/.history
+
+#################################
+# Miscellaneous Generated Files #
+#################################
+# ADD AS NEED BE
+.DS_Store
+
+
+###################################
+# JetBrains Rider Generated Files #
+###################################
+# Cache Directory
+.idea
+
+# Solution and Project Files
+*.sln
+*.csproj
+*.sln.DotSettings
+*.sln.DotSettings.user
