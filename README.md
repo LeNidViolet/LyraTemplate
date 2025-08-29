@@ -1,7 +1,7 @@
 
 Unreal Engine Version
 
-5.6.1 (Installed from source build)
+5.6.1 (Installed Build)
 
 Lyra Version
 
