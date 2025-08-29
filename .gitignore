@@ -36,6 +36,8 @@
 #################################
 # ADD AS NEED BE
 .DS_Store
+Plugins/**/Intermediate/*
+Plugins/**/Binaries/*
 
 
 ###################################
