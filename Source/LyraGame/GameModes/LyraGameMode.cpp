@@ -157,7 +157,7 @@ void ALyraGameMode::HandleMatchAssignmentIfNotExpectingOne()
 		}
 
 		//@TODO: Pull this from a config setting or something
-		ExperienceId = FPrimaryAssetId(FPrimaryAssetType("LyraExperienceDefinition"), FName("B_DefaultExperience"));
+		ExperienceId = FPrimaryAssetId(FPrimaryAssetType("LyraExperienceDefinition"), FName("B_Experience_Default"));
 		ExperienceIdSource = TEXT("Default");
 	}
 

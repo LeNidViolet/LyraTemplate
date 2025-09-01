@@ -38,6 +38,7 @@
 .DS_Store
 Plugins/**/Intermediate/*
 Plugins/**/Binaries/*
+*.xcworkspace/
 
 
 ###################################
