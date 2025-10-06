@@ -8,11 +8,12 @@
 
 #define LOCTEXT_NAMESPACE "Messaging"
 
-UCommonGameDialogDescriptor* UCommonGameDialogDescriptor::CreateConfirmationOk(const FText& Header, const FText& Body)
+UCommonGameDialogDescriptor* UCommonGameDialogDescriptor::CreateConfirmationOk(const FText& Header, const FText& Body, const FGameplayTag& LayerName)
 {
 	UCommonGameDialogDescriptor* Descriptor = NewObject<UCommonGameDialogDescriptor>();
 	Descriptor->Header = Header;
 	Descriptor->Body = Body;
+	Descriptor->LayerName = LayerName;
 
 	FConfirmationDialogAction ConfirmAction;
 	ConfirmAction.Result = ECommonMessagingResult::Confirmed;
@@ -23,11 +24,12 @@ UCommonGameDialogDescriptor* UCommonGameDialogDescriptor::CreateConfirmationOk(c
 	return Descriptor;
 }
 
-UCommonGameDialogDescriptor* UCommonGameDialogDescriptor::CreateConfirmationOkCancel(const FText& Header, const FText& Body)
+UCommonGameDialogDescriptor* UCommonGameDialogDescriptor::CreateConfirmationOkCancel(const FText& Header, const FText& Body, const FGameplayTag& LayerName)
 {
 	UCommonGameDialogDescriptor* Descriptor = NewObject<UCommonGameDialogDescriptor>();
 	Descriptor->Header = Header;
 	Descriptor->Body = Body;
+	Descriptor->LayerName = LayerName;
 
 	FConfirmationDialogAction ConfirmAction;
 	ConfirmAction.Result = ECommonMessagingResult::Confirmed;
@@ -43,11 +45,12 @@ UCommonGameDialogDescriptor* UCommonGameDialogDescriptor::CreateConfirmationOkCa
 	return Descriptor;
 }
 
-UCommonGameDialogDescriptor* UCommonGameDialogDescriptor::CreateConfirmationYesNo(const FText& Header, const FText& Body)
+UCommonGameDialogDescriptor* UCommonGameDialogDescriptor::CreateConfirmationYesNo(const FText& Header, const FText& Body, const FGameplayTag& LayerName)
 {
 	UCommonGameDialogDescriptor* Descriptor = NewObject<UCommonGameDialogDescriptor>();
 	Descriptor->Header = Header;
 	Descriptor->Body = Body;
+	Descriptor->LayerName = LayerName;
 
 	FConfirmationDialogAction ConfirmAction;
 	ConfirmAction.Result = ECommonMessagingResult::Confirmed;
@@ -63,11 +66,12 @@ UCommonGameDialogDescriptor* UCommonGameDialogDescriptor::CreateConfirmationYesN
 	return Descriptor;
 }
 
-UCommonGameDialogDescriptor* UCommonGameDialogDescriptor::CreateConfirmationYesNoCancel(const FText& Header, const FText& Body)
+UCommonGameDialogDescriptor* UCommonGameDialogDescriptor::CreateConfirmationYesNoCancel(const FText& Header, const FText& Body, const FGameplayTag& LayerName)
 {
 	UCommonGameDialogDescriptor* Descriptor = NewObject<UCommonGameDialogDescriptor>();
 	Descriptor->Header = Header;
 	Descriptor->Body = Body;
+	Descriptor->LayerName = LayerName;
 
 	FConfirmationDialogAction ConfirmAction;
 	ConfirmAction.Result = ECommonMessagingResult::Confirmed;

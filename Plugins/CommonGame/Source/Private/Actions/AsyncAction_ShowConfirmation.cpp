@@ -13,25 +13,36 @@ UAsyncAction_ShowConfirmation::UAsyncAction_ShowConfirmation(const FObjectInitia
 {
 }
 
-UAsyncAction_ShowConfirmation* UAsyncAction_ShowConfirmation::ShowConfirmationYesNo(UObject* InWorldContextObject, FText Title, FText Message)
+UAsyncAction_ShowConfirmation* UAsyncAction_ShowConfirmation::ShowConfirmationYesNo(UObject* InWorldContextObject, FText Title, FText Message, FGameplayTag LayerName)
 {
 	UAsyncAction_ShowConfirmation* Action = NewObject<UAsyncAction_ShowConfirmation>();
 	Action->WorldContextObject = InWorldContextObject;
-	Action->Descriptor = UCommonGameDialogDescriptor::CreateConfirmationYesNo(Title, Message);
+	Action->Descriptor = UCommonGameDialogDescriptor::CreateConfirmationYesNo(Title, Message, LayerName);
 	Action->RegisterWithGameInstance(InWorldContextObject);
 
 	return Action;
 }
 
-UAsyncAction_ShowConfirmation* UAsyncAction_ShowConfirmation::ShowConfirmationOkCancel(UObject* InWorldContextObject, FText Title, FText Message)
+UAsyncAction_ShowConfirmation* UAsyncAction_ShowConfirmation::ShowConfirmationOkCancel(UObject* InWorldContextObject, FText Title, FText Message, FGameplayTag LayerName)
 {
 	UAsyncAction_ShowConfirmation* Action = NewObject<UAsyncAction_ShowConfirmation>();
 	Action->WorldContextObject = InWorldContextObject;
-	Action->Descriptor = UCommonGameDialogDescriptor::CreateConfirmationOkCancel(Title, Message);
+	Action->Descriptor = UCommonGameDialogDescriptor::CreateConfirmationOkCancel(Title, Message, LayerName);
 	Action->RegisterWithGameInstance(InWorldContextObject);
 
 	return Action;
 }
+
+UAsyncAction_ShowConfirmation* UAsyncAction_ShowConfirmation::ShowConfirmationOk(UObject* InWorldContextObject, FText Title, FText Message, FGameplayTag LayerName)
+{
+	UAsyncAction_ShowConfirmation* Action = NewObject<UAsyncAction_ShowConfirmation>();
+	Action->WorldContextObject = InWorldContextObject;
+	Action->Descriptor = UCommonGameDialogDescriptor::CreateConfirmationOk(Title, Message, LayerName);
+	Action->RegisterWithGameInstance(InWorldContextObject);
+
+	return Action;
+}
+
 
 UAsyncAction_ShowConfirmation* UAsyncAction_ShowConfirmation::ShowConfirmationCustom(UObject* InWorldContextObject, UCommonGameDialogDescriptor* Descriptor)
 {

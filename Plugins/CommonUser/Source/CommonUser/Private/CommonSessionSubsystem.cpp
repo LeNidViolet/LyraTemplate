@@ -491,6 +491,9 @@ void UCommonSessionSubsystem::HostSession(APlayerController* HostingPlayer, UCom
 		}
 		else
 		{
+			CreateSessionResult = FOnlineResultInformation();
+			NotifyCreateSessionComplete(CreateSessionResult);
+			
 			// Offline so travel to the specified match URL immediately
 			GetWorld()->ServerTravel(Request->ConstructTravelURL());
 		}

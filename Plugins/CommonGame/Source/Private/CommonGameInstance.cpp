@@ -20,15 +20,29 @@ UCommonGameInstance::UCommonGameInstance(const FObjectInitializer& ObjectInitial
 
 }
 
-void UCommonGameInstance::HandleSystemMessage(FGameplayTag MessageType, FText Title, FText Message)
+void UCommonGameInstance::HandleSystemMessage(FGameplayTag MessageType, FText Title, FText Message, FGameplayTag LayerName)
 {
 	ULocalPlayer* FirstPlayer = GetFirstGamePlayer();
 	// Forward severe ones to the error dialog for the first player
-	if (FirstPlayer && MessageType.MatchesTag(FCommonUserTags::SystemMessage_Error))
+	if (FirstPlayer)
 	{
-		if (UCommonMessagingSubsystem* Messaging = FirstPlayer->GetSubsystem<UCommonMessagingSubsystem>())
+		if (MessageType.MatchesTag(FCommonUserTags::SystemMessage_Error))
 		{
-			Messaging->ShowError(UCommonGameDialogDescriptor::CreateConfirmationOk(Title, Message));
+			if (UCommonMessagingSubsystem* Messaging = FirstPlayer->GetSubsystem<UCommonMessagingSubsystem>())
+			{
+				Messaging->ShowError(UCommonGameDialogDescriptor::CreateConfirmationOk(Title, Message, LayerName));
+				return;
+			}
+		}
+
+
+		if (MessageType.MatchesTag(FCommonUserTags::SystemMessage_Display))
+		{
+			if (UCommonMessagingSubsystem* Messaging = FirstPlayer->GetSubsystem<UCommonMessagingSubsystem>())
+			{
+				Messaging->ShowConfirmation(UCommonGameDialogDescriptor::CreateConfirmationOk(Title, Message, LayerName));
+				return;
+			}
 		}
 	}
 }
@@ -134,7 +148,7 @@ void UCommonGameInstance::OnUserRequestedSession(const FPlatformUserId& Platform
 	}
 	else
 	{
-		HandleSystemMessage(FCommonUserTags::SystemMessage_Error, NSLOCTEXT("CommonGame", "Warning_RequestedSessionFailed", "Requested Session Failed"), RequestedSessionResult.ErrorText);
+		HandleSystemMessage(FCommonUserTags::SystemMessage_Error, NSLOCTEXT("CommonGame", "Warning_RequestedSessionFailed", "Requested Session Failed"), RequestedSessionResult.ErrorText, FGameplayTag());
 	}
 }
 

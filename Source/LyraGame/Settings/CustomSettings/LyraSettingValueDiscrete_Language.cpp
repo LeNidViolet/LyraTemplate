@@ -47,7 +47,8 @@ void ULyraSettingValueDiscrete_Language::OnApply()
 		Messaging->ShowConfirmation(
 			UCommonGameDialogDescriptor::CreateConfirmationOk(
 			LOCTEXT("WarningLanguage_Title", "Language Changed"),
-			LOCTEXT("WarningLanguage_Message", "You will need to restart the game completely for all language related changes to take effect.")
+			LOCTEXT("WarningLanguage_Message", "You will need to restart the game completely for all language related changes to take effect."),
+			FGameplayTag()
 			)
 		);
 	}

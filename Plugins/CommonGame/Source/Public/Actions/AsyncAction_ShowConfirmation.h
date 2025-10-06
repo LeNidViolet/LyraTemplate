@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "GameplayTagContainer.h"
 #include "Kismet/BlueprintAsyncActionBase.h"
 
 #include "UObject/ObjectPtr.h"
@@ -27,12 +28,17 @@ class UAsyncAction_ShowConfirmation : public UBlueprintAsyncActionBase
 public:
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, meta = (BlueprintInternalUseOnly = "true", WorldContext = "InWorldContextObject"))
 	static UAsyncAction_ShowConfirmation* ShowConfirmationYesNo(
-		UObject* InWorldContextObject, FText Title, FText Message
+		UObject* InWorldContextObject, FText Title, FText Message, UPARAM(meta = (Categories = "UI.Layer")) FGameplayTag LayerName
 	);
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, meta = (BlueprintInternalUseOnly = "true", WorldContext = "InWorldContextObject"))
 	static UAsyncAction_ShowConfirmation* ShowConfirmationOkCancel(
-		UObject* InWorldContextObject, FText Title, FText Message
+		UObject* InWorldContextObject, FText Title, FText Message, UPARAM(meta = (Categories = "UI.Layer")) FGameplayTag LayerName
+	);
+
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, meta = (BlueprintInternalUseOnly = "true", WorldContext = "InWorldContextObject"))
+	static UAsyncAction_ShowConfirmation* ShowConfirmationOk(
+		UObject* InWorldContextObject, FText Title, FText Message, UPARAM(meta = (Categories = "UI.Layer")) FGameplayTag LayerName
 	);
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, meta = (BlueprintInternalUseOnly = "true", WorldContext = "InWorldContextObject"))

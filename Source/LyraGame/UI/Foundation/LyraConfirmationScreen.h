@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "InputAction.h"
 #include "Engine/DataTable.h"
 #include "Messaging/CommonGameDialog.h"
 
@@ -25,6 +26,8 @@ class ULyraConfirmationScreen : public UCommonGameDialog
 public:
 	virtual void SetupDialog(UCommonGameDialogDescriptor* Descriptor, FCommonMessagingResultDelegate ResultCallback) override;
 	virtual void KillDialog() override;
+
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 protected:
 	virtual void NativeOnInitialized() override;
@@ -56,4 +59,10 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, meta = (RowType = "/Script/CommonUI.CommonInputActionDataBase"))
 	FDataTableRowHandle CancelAction;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UInputAction> EnhancedCancelAction;
+
+	UPROPERTY()
+	TObjectPtr<UUserWidget> LastButton;
 };

@@ -31,7 +31,7 @@ public:
 	
 	/** Handles errors/warnings from CommonUser, can be overridden per game */
 	UFUNCTION()
-	UE_API virtual void HandleSystemMessage(FGameplayTag MessageType, FText Title, FText Message);
+	UE_API virtual void HandleSystemMessage(FGameplayTag MessageType, FText Title, FText Message, UPARAM(meta = (Categories = "UI.Layer")) FGameplayTag LayerName);
 
 	UFUNCTION()
 	UE_API virtual void HandlePrivilegeChanged(const UCommonUserInfo* UserInfo, ECommonUserPrivilege Privilege, ECommonUserAvailability OldAvailability, ECommonUserAvailability NewAvailability);

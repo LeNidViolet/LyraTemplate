@@ -52,3 +52,14 @@ Plugins/**/Binaries/*
 *.csproj
 *.sln.DotSettings
 *.sln.DotSettings.user
+
+# EIK.EOSSDK
+Plugins/EOSIntegrationKit/Source/ThirdParty/EIKSDK/Tools
+Plugins/EOSIntegrationKit/Source/ThirdParty/EIKSDK/Lib
+Plugins/EOSIntegrationKit/Source/ThirdParty/EIKSDK/Include
+Plugins/EOSIntegrationKit/Source/ThirdParty/EIKSDK/Bin
+
+*.zip
+
+Config/Custom/EosClient
+Config/Custom/EosDedicatedServer

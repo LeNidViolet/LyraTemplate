@@ -509,7 +509,17 @@ void ULoadingScreenManager::ShowLoadingScreen()
 		LoadingScreenVisibilityChanged.Broadcast(/*bIsVisible=*/ true);
 
 		// Create the loading screen widget
-		TSubclassOf<UUserWidget> LoadingScreenWidgetClass = Settings->LoadingScreenWidget.TryLoadClass<UUserWidget>();
+		TSubclassOf<UUserWidget> LoadingScreenWidgetClass;
+		if (OneTimeScreenWidget)
+		{
+			LoadingScreenWidgetClass = OneTimeScreenWidget.LoadSynchronous();
+		}
+		else
+		{
+			LoadingScreenWidgetClass = Settings->LoadingScreenWidget.TryLoadClass<UUserWidget>();
+		}
+
+
 		if (UUserWidget* UserWidget = UUserWidget::CreateWidgetInstance(*LocalGameInstance, LoadingScreenWidgetClass, NAME_None))
 		{
 			LoadingScreenWidget = UserWidget->TakeWidget();
@@ -562,6 +572,8 @@ void ULoadingScreenManager::HideLoadingScreen()
 
 		// Let observers know that the loading screen is done
 		LoadingScreenVisibilityChanged.Broadcast(/*bIsVisible=*/ false);
+
+		OneTimeScreenWidget = nullptr;
 	}
 
 	CSV_EVENT(LoadingScreen, TEXT("Hide"));

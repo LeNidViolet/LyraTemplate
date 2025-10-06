@@ -30,28 +30,73 @@ void ULyraConfirmationScreen::SetupDialog(UCommonGameDialogDescriptor* Descripto
 
 	for (const FConfirmationDialogAction& Action : Descriptor->ButtonActions)
 	{
-		FDataTableRowHandle ActionRow;
-
-		switch(Action.Result)
+		if (EnhancedCancelAction)
 		{
-			case ECommonMessagingResult::Confirmed:
-				ActionRow = ICommonInputModule::GetSettings().GetDefaultClickAction();
-				break;
-			case ECommonMessagingResult::Declined:
-				ActionRow = ICommonInputModule::GetSettings().GetDefaultBackAction();
-				break;
-			case ECommonMessagingResult::Cancelled:
-				ActionRow = CancelAction;
-				break;
-			default:
-				ensure(false);
-				continue;
-		}
+			UInputAction* EnhancedAction = nullptr;
 
-		ULyraButtonBase* Button = EntryBox_Buttons->CreateEntry<ULyraButtonBase>();
-		Button->SetTriggeringInputAction(ActionRow);
-		Button->OnClicked().AddUObject(this, &ThisClass::CloseConfirmationWindow, Action.Result);
-		Button->SetButtonText(Action.OptionalDisplayText);
+			if (EnhancedCancelAction)
+			{
+				switch(Action.Result)
+				{
+				case ECommonMessagingResult::Confirmed:
+					EnhancedAction = ICommonInputModule::GetSettings().GetEnhancedInputClickAction();
+					break;
+				case ECommonMessagingResult::Declined:
+					EnhancedAction = ICommonInputModule::GetSettings().GetEnhancedInputBackAction();
+					break;
+				case ECommonMessagingResult::Cancelled:
+					EnhancedAction = EnhancedCancelAction;
+					break;
+				default:
+					ensure(false);
+					continue;
+				}
+			}
+
+
+ 			ULyraButtonBase* Button = EntryBox_Buttons->CreateEntry<ULyraButtonBase>();
+			if (EnhancedAction)
+			{
+				Button->SetTriggeringEnhancedInputAction(EnhancedAction);
+			}
+ 			Button->OnClicked().AddUObject(this, &ThisClass::CloseConfirmationWindow, Action.Result);
+ 			Button->SetButtonText(Action.OptionalDisplayText);
+
+ 			LastButton = Button;
+		}
+		else
+		{
+			FDataTableRowHandle ActionRow;
+
+			if (!CancelAction.IsNull())
+			{
+				switch(Action.Result)
+				{
+				case ECommonMessagingResult::Confirmed:
+					ActionRow = ICommonInputModule::GetSettings().GetDefaultClickAction();
+					break;
+				case ECommonMessagingResult::Declined:
+					ActionRow = ICommonInputModule::GetSettings().GetDefaultBackAction();
+					break;
+				case ECommonMessagingResult::Cancelled:
+					ActionRow = CancelAction;
+					break;
+				default:
+					ensure(false);
+					continue;
+				}
+			}
+
+			ULyraButtonBase* Button = EntryBox_Buttons->CreateEntry<ULyraButtonBase>();
+			if (!ActionRow.IsNull())
+			{
+				Button->SetTriggeringInputAction(ActionRow);
+			}
+			Button->OnClicked().AddUObject(this, &ThisClass::CloseConfirmationWindow, Action.Result);
+			Button->SetButtonText(Action.OptionalDisplayText);
+
+			LastButton = Button;
+		}
 	}
 
 	OnResultCallback = ResultCallback;
@@ -60,6 +105,18 @@ void ULyraConfirmationScreen::SetupDialog(UCommonGameDialogDescriptor* Descripto
 void ULyraConfirmationScreen::KillDialog()
 {
 	Super::KillDialog();
+}
+
+UWidget* ULyraConfirmationScreen::NativeGetDesiredFocusTarget() const
+{
+	if (LastButton)
+	{
+		return LastButton;
+	}
+	else
+	{
+		return Super::NativeGetDesiredFocusTarget();
+	}
 }
 
 void ULyraConfirmationScreen::NativeOnInitialized()
@@ -92,9 +149,9 @@ FEventReply ULyraConfirmationScreen::HandleTapToCloseZoneMouseButtonDown(FGeomet
 #if WITH_EDITOR
 void ULyraConfirmationScreen::ValidateCompiledDefaults(IWidgetCompilerLog& CompileLog) const
 {
-	if (CancelAction.IsNull())
-	{
-		CompileLog.Error(FText::Format(FText::FromString(TEXT("{0} has unset property: CancelAction.")), FText::FromString(GetName())));
-	}
+//	if (CancelAction.IsNull() && !EnhancedCancelAction)
+//	{
+//		CompileLog.Error(FText::Format(FText::FromString(TEXT("{0} has unset property: CancelAction && EnhancedCancelAction.")), FText::FromString(GetName())));
+//	}
 }
 #endif

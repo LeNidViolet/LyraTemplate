@@ -62,6 +62,11 @@ public:
 
 	UE_API void RegisterLoadingProcessor(TScriptInterface<ILoadingProcessInterface> Interface);
 	UE_API void UnregisterLoadingProcessor(TScriptInterface<ILoadingProcessInterface> Interface);
+
+	UE_API void SetOneTimeLoadScreenWidget(const TSoftClassPtr<UUserWidget> Widget)
+	{
+		OneTimeScreenWidget = Widget;
+	}
 	
 private:
 	UE_API void HandlePreLoadMap(const FWorldContext& WorldContext, const FString& MapName);
@@ -126,6 +131,9 @@ private:
 
 	/** True when the loading screen is currently being shown */
 	bool bCurrentlyShowingLoadingScreen = false;
+
+	/** Onetime Loading Screen Widget, used by FacingExperience **/
+	TSoftClassPtr<UUserWidget> OneTimeScreenWidget;
 };
 
 #undef UE_API

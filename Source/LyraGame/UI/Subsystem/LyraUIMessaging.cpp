@@ -28,7 +28,10 @@ void ULyraUIMessaging::ShowConfirmation(UCommonGameDialogDescriptor* DialogDescr
 	{
 		if (UPrimaryGameLayout* RootLayout = LocalPlayer->GetRootUILayout())
 		{
-			RootLayout->PushWidgetToLayerStack<UCommonGameDialog>(TAG_UI_LAYER_MODAL, ConfirmationDialogClassPtr, [DialogDescriptor, ResultCallback](UCommonGameDialog& Dialog) {
+			RootLayout->PushWidgetToLayerStack<UCommonGameDialog>(
+				DialogDescriptor->LayerName.IsValid() ? DialogDescriptor->LayerName : TAG_UI_LAYER_MODAL,
+				ConfirmationDialogClassPtr,
+				[DialogDescriptor, ResultCallback](UCommonGameDialog& Dialog) {
 				Dialog.SetupDialog(DialogDescriptor, ResultCallback);
 			});
 		}
@@ -41,7 +44,10 @@ void ULyraUIMessaging::ShowError(UCommonGameDialogDescriptor* DialogDescriptor, 
 	{
 		if (UPrimaryGameLayout* RootLayout = LocalPlayer->GetRootUILayout())
 		{
-			RootLayout->PushWidgetToLayerStack<UCommonGameDialog>(TAG_UI_LAYER_MODAL, ErrorDialogClassPtr, [DialogDescriptor, ResultCallback](UCommonGameDialog& Dialog) {
+			RootLayout->PushWidgetToLayerStack<UCommonGameDialog>(
+				DialogDescriptor->LayerName.IsValid() ? DialogDescriptor->LayerName : TAG_UI_LAYER_MODAL,
+				ErrorDialogClassPtr,
+				[DialogDescriptor, ResultCallback](UCommonGameDialog& Dialog) {
 				Dialog.SetupDialog(DialogDescriptor, ResultCallback);
 			});
 		}

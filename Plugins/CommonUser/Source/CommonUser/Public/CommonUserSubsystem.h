@@ -149,7 +149,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FCommonUserOnInitializeCompleteMul
 DECLARE_DYNAMIC_DELEGATE_FiveParams(FCommonUserOnInitializeComplete, const UCommonUserInfo*, UserInfo, bool, bSuccess, FText, Error, ECommonUserPrivilege, RequestedPrivilege, ECommonUserOnlineContext, OnlineContext);
 
 /** Delegate when a system error message is sent, the game can choose to display it to the user using the type tag */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FCommonUserHandleSystemMessageDelegate, FGameplayTag, MessageType, FText, TitleText, FText, BodyText);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FCommonUserHandleSystemMessageDelegate, FGameplayTag, MessageType, FText, TitleText, FText, BodyText, FGameplayTag, Layer);
 
 /** Delegate when a privilege changes, this can be bound to see if online status/etc changes during gameplay */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FCommonUserAvailabilityChangedDelegate, const UCommonUserInfo*, UserInfo, ECommonUserPrivilege, Privilege, ECommonUserAvailability, OldAvailability, ECommonUserAvailability, NewAvailability);
@@ -234,7 +234,7 @@ public:
 
 	/** Send a system message via OnHandleSystemMessage */
 	UFUNCTION(BlueprintCallable, Category = CommonUser)
-	COMMONUSER_API virtual void SendSystemMessage(FGameplayTag MessageType, FText TitleText, FText BodyText);
+	COMMONUSER_API virtual void SendSystemMessage(FGameplayTag MessageType, FText TitleText, FText BodyText, UPARAM(meta = (Categories = "UI.Layer")) FGameplayTag LayerName);
 
 	/** Sets the maximum number of local players, will not destroy existing ones */
 	UFUNCTION(BlueprintCallable, Category = CommonUser)

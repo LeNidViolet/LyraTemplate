@@ -4,6 +4,7 @@
 
 #include "CommonActivatableWidget.h"
 #include "CommonMessagingSubsystem.h"
+#include "GameplayTagContainer.h"
 
 #include "CommonGameDialog.generated.h"
 
@@ -36,10 +37,10 @@ class UCommonGameDialogDescriptor : public UObject
 	GENERATED_BODY()
 	
 public:
-	static UE_API UCommonGameDialogDescriptor* CreateConfirmationOk(const FText& Header, const FText& Body);
-	static UE_API UCommonGameDialogDescriptor* CreateConfirmationOkCancel(const FText& Header, const FText& Body);
-	static UE_API UCommonGameDialogDescriptor* CreateConfirmationYesNo(const FText& Header, const FText& Body);
-	static UE_API UCommonGameDialogDescriptor* CreateConfirmationYesNoCancel(const FText& Header, const FText& Body);
+	static UE_API UCommonGameDialogDescriptor* CreateConfirmationOk(const FText& Header, const FText& Body, const FGameplayTag& LayerName);
+	static UE_API UCommonGameDialogDescriptor* CreateConfirmationOkCancel(const FText& Header, const FText& Body, const FGameplayTag& LayerName);
+	static UE_API UCommonGameDialogDescriptor* CreateConfirmationYesNo(const FText& Header, const FText& Body, const FGameplayTag& LayerName);
+	static UE_API UCommonGameDialogDescriptor* CreateConfirmationYesNoCancel(const FText& Header, const FText& Body, const FGameplayTag& LayerName);
 
 public:
 	/** The header of the message to display */
@@ -53,6 +54,10 @@ public:
 	/** The confirm button's input action to use. */
 	UPROPERTY(BlueprintReadWrite)
 	TArray<FConfirmationDialogAction> ButtonActions;
+
+	/** The layer to show **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag LayerName;
 };
 
 

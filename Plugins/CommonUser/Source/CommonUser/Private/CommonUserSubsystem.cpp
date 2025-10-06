@@ -923,9 +923,9 @@ FString UCommonUserSubsystem::GetLocalUserNickname(FPlatformUserId PlatformUser,
 	return FString();
 }
 
-void UCommonUserSubsystem::SendSystemMessage(FGameplayTag MessageType, FText TitleText, FText BodyText)
+void UCommonUserSubsystem::SendSystemMessage(FGameplayTag MessageType, FText TitleText, FText BodyText, FGameplayTag Layer)
 {
-	OnHandleSystemMessage.Broadcast(MessageType, TitleText, BodyText);
+	OnHandleSystemMessage.Broadcast(MessageType, TitleText, BodyText, Layer);
 }
 
 void UCommonUserSubsystem::SetMaxLocalPlayers(int32 InMaxLocalPlayers)
@@ -1446,7 +1446,7 @@ void UCommonUserSubsystem::HandleUserInitializeFailed(FCommonUserInitializeParam
 
 	if (!Params.bSuppressLoginErrors)
 	{
-		SendSystemMessage(FCommonUserTags::SystemMessage_Error_InitializeLocalPlayerFailed, TitleText, Error);
+		SendSystemMessage(FCommonUserTags::SystemMessage_Error_InitializeLocalPlayerFailed, TitleText, Error, FGameplayTag());
 	}
 	
 	// Call callbacks

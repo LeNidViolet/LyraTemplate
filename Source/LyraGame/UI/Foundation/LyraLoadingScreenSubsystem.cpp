@@ -2,6 +2,7 @@
 
 #include "UI/Foundation/LyraLoadingScreenSubsystem.h"
 
+#include "LoadingScreenManager.h"
 #include "Blueprint/UserWidget.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(LyraLoadingScreenSubsystem)
@@ -15,8 +16,14 @@ ULyraLoadingScreenSubsystem::ULyraLoadingScreenSubsystem()
 {
 }
 
-void ULyraLoadingScreenSubsystem::SetLoadingScreenContentWidget(TSubclassOf<UUserWidget> NewWidgetClass)
+void ULyraLoadingScreenSubsystem::SetLoadingScreenContentWidget(TSoftClassPtr<UUserWidget> NewWidgetClass)
 {
+	// Update to the LoadingScreenManager for next use
+	if (ULoadingScreenManager* LoadingScreenManager = UGameInstance::GetSubsystem<ULoadingScreenManager>(GetGameInstance()))
+	{
+		LoadingScreenManager->SetOneTimeLoadScreenWidget(NewWidgetClass);
+	}
+
 	if (LoadingScreenWidgetClass != NewWidgetClass)
 	{
 		LoadingScreenWidgetClass = NewWidgetClass;
@@ -25,7 +32,7 @@ void ULyraLoadingScreenSubsystem::SetLoadingScreenContentWidget(TSubclassOf<UUse
 	}
 }
 
-TSubclassOf<UUserWidget> ULyraLoadingScreenSubsystem::GetLoadingScreenContentWidget() const
+TSoftClassPtr<UUserWidget> ULyraLoadingScreenSubsystem::GetLoadingScreenContentWidget() const
 {
 	return LoadingScreenWidgetClass;
 }
