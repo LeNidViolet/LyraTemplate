@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "{C29ABE06-CA4A-3485-E038-7D878E34E22F}",
+	"EngineAssociation": "{043B29C7-E640-E31B-B009-14888B784469}",
 	"Category": "Samples",
 	"Description": "",
 	"Modules": [
@@ -210,14 +210,6 @@
 			"Optional": true
 		},
 		{
-			"Name": "OnlineSubsystemEOS",
-			"Enabled": true
-		},
-		{
-			"Name": "OnlineServicesEOS",
-			"Enabled": true
-		},
-		{
 			"Name": "OnlineServicesNull",
 			"Enabled": true
 		},
@@ -350,6 +342,33 @@
 		{
 			"Name": "Reflex",
 			"Enabled": true
+		},
+		{
+			"Name": "FlatNodes",
+			"Enabled": false,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/b719437f3fb54c259b34227363df8cab"
+		},
+		{
+			"Name": "ElectronicNodes",
+			"Enabled": false,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/5cb2a394d0c04e73891762be4cbd7216"
+		},
+		{
+			"Name": "Bridge",
+			"Enabled": false
+		},
+		{
+			"Name": "Fab",
+			"Enabled": false
+		},
+		{
+			"Name": "MetaHumanSDK",
+			"Enabled": false
+		},
+		{
+			"Name": "EOSIntegrationKit",
+			"Enabled": true,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/dba0aa05bdd144e69405653a387ad63e"
 		}
 	],
 	"EpicSampleNameHash": "451731683"
