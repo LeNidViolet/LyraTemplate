@@ -483,6 +483,60 @@ void ALyraGameMode::RequestPlayerRestartNextFrame(AController* Controller, bool 
 	}
 }
 
+bool ALyraGameMode::TravelExperience(ULyraUserFacingExperienceDefinition* FacingExperience,
+	TMap<FString, FString> ExtraArgs, bool bAbsolute, ECommonSessionOnlineMode OnlineMode)
+{
+	FAssetData MapAssetData;
+	bool bok = UAssetManager::Get().GetPrimaryAssetData(FacingExperience->MapID, MapAssetData);
+	check(bok);
+
+	FString TravelURL = MapAssetData.PackageName.ToString();
+	switch (OnlineMode)
+	{
+		case ECommonSessionOnlineMode::Offline:
+			break;
+		case ECommonSessionOnlineMode::Online:
+			TravelURL += TEXT("?listen");
+			break;
+		case ECommonSessionOnlineMode::LAN:
+			TravelURL += TEXT("?bIsLanMatch?listen");
+			break;
+	}
+
+	for (const auto& KVP : ExtraArgs)
+	{
+		if (!KVP.Key.IsEmpty())
+		{
+			if (KVP.Value.IsEmpty())
+			{
+				TravelURL += FString::Printf(TEXT("?%s"), *KVP.Key);
+			}
+			else
+			{
+				TravelURL += FString::Printf(TEXT("?%s=%s"), *KVP.Key, *KVP.Value);
+			}
+		}
+	}
+
+	for (const auto& KVP : FacingExperience->ExtraArgs)
+	{
+		if (!KVP.Key.IsEmpty())
+		{
+			if (KVP.Value.IsEmpty())
+			{
+				TravelURL += FString::Printf(TEXT("?%s"), *KVP.Key);
+			}
+			else
+			{
+				TravelURL += FString::Printf(TEXT("?%s=%s"), *KVP.Key, *KVP.Value);
+			}
+		}
+	}
+
+	UE_LOG(LogLyra, Log, TEXT("Traveling to experience via URL %s"), *TravelURL);
+	return GetWorld()->ServerTravel(TravelURL, bAbsolute);
+}
+
 bool ALyraGameMode::UpdatePlayerStartSpot(AController* Player, const FString& Portal, FString& OutErrorMessage)
 {
 	// Do nothing, we'll wait until PostLogin when we try to spawn the player for real.
