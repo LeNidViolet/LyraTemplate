@@ -210,6 +210,14 @@
 			"Optional": true
 		},
 		{
+			"Name": "OnlineSubsystemEOS",
+			"Enabled": true
+		},
+		{
+			"Name": "OnlineServicesEOS",
+			"Enabled": true
+		},
+		{
 			"Name": "OnlineServicesNull",
 			"Enabled": true
 		},
@@ -352,23 +360,6 @@
 			"Name": "ElectronicNodes",
 			"Enabled": false,
 			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/5cb2a394d0c04e73891762be4cbd7216"
-		},
-		{
-			"Name": "Bridge",
-			"Enabled": false
-		},
-		{
-			"Name": "Fab",
-			"Enabled": false
-		},
-		{
-			"Name": "MetaHumanSDK",
-			"Enabled": false
-		},
-		{
-			"Name": "EOSIntegrationKit",
-			"Enabled": true,
-			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/dba0aa05bdd144e69405653a387ad63e"
 		}
 	],
 	"EpicSampleNameHash": "451731683"

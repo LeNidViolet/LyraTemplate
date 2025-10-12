@@ -67,6 +67,30 @@ enum class ECommonUserOnlineContext : uint8
 	Invalid
 };
 
+/** Convert a ECommonUserOnlineContext into a string */
+inline const TCHAR* LexToString(const ECommonUserOnlineContext Value)
+{
+	switch (Value)
+	{
+	case ECommonUserOnlineContext::Game:
+		return TEXT("Game");
+	case ECommonUserOnlineContext::Default:
+		return TEXT("Default");
+	case ECommonUserOnlineContext::Service:
+		return TEXT("Service");
+	case ECommonUserOnlineContext::ServiceOrDefault:
+		return TEXT("ServiceOrDefault");
+	case ECommonUserOnlineContext::Platform:
+		return TEXT("Platform");
+	case ECommonUserOnlineContext::PlatformOrDefault:
+		return TEXT("PlatformOrDefault");
+	case ECommonUserOnlineContext::Invalid:
+		; // Intentional fall-through
+	}
+
+	return TEXT("Invalid");
+}
+
 /** Enum describing the state of initialization for a specific user */
 UENUM(BlueprintType)
 enum class ECommonUserInitializationState : uint8
@@ -95,6 +119,30 @@ enum class ECommonUserInitializationState : uint8
 	Invalid,
 };
 
+/** Convert a ECommonUserInitializationState into a string */
+inline const TCHAR* LexToString(const ECommonUserInitializationState Value)
+{
+	switch (Value)
+	{
+	case ECommonUserInitializationState::Unknown:
+		return TEXT("Unknown");
+	case ECommonUserInitializationState::DoingInitialLogin:
+		return TEXT("DoingInitialLogin");
+	case ECommonUserInitializationState::DoingNetworkLogin:
+		return TEXT("DoingNetworkLogin");
+	case ECommonUserInitializationState::FailedtoLogin:
+		return TEXT("FailedtoLogin");
+	case ECommonUserInitializationState::LoggedInOnline:
+		return TEXT("LoggedInOnline");
+	case ECommonUserInitializationState::LoggedInLocalOnly:
+		return TEXT("LoggedInLocalOnly");
+	case ECommonUserInitializationState::Invalid:
+		; // Intentional fall-through
+	}
+
+	return TEXT("Invalid");
+}
+
 /** Enum specifying different privileges and capabilities available to a user */
 UENUM(BlueprintType)
 enum class ECommonUserPrivilege : uint8
@@ -121,6 +169,30 @@ enum class ECommonUserPrivilege : uint8
 	Invalid_Count					UMETA(Hidden)
 };
 
+/** Convert a ECommonUserPrivilege into a string */
+inline const TCHAR* LexToString(const ECommonUserPrivilege Value)
+{
+	switch (Value)
+	{
+	case ECommonUserPrivilege::CanPlay:
+		return TEXT("CanPlay");
+	case ECommonUserPrivilege::CanPlayOnline:
+		return TEXT("CanPlayOnline");
+	case ECommonUserPrivilege::CanCommunicateViaTextOnline:
+		return TEXT("CanCommunicateViaTextOnline");
+	case ECommonUserPrivilege::CanCommunicateViaVoiceOnline:
+		return TEXT("CanCommunicateViaVoiceOnline");
+	case ECommonUserPrivilege::CanUseUserGeneratedContent:
+		return TEXT("CanUseUserGeneratedContent");
+	case ECommonUserPrivilege::CanUseCrossPlay:
+		return TEXT("CanUseCrossPlay");
+	case ECommonUserPrivilege::Invalid_Count:
+		; // Intentional fall-through
+	}
+
+	return TEXT("Invalid");
+}
+
 /** Enum specifying the general availability of a feature or privilege, this combines information from multiple sources */
 UENUM(BlueprintType)
 enum class ECommonUserAvailability : uint8
@@ -143,6 +215,28 @@ enum class ECommonUserAvailability : uint8
 	/** Invalid feature */
 	Invalid,
 };
+
+/** Convert a ECommonUserAvailability into a string */
+inline const TCHAR* LexToString(const ECommonUserAvailability Value)
+{
+	switch (Value)
+	{
+	case ECommonUserAvailability::Unknown:
+		return TEXT("Unknown");
+	case ECommonUserAvailability::NowAvailable:
+		return TEXT("NowAvailable");
+	case ECommonUserAvailability::PossiblyAvailable:
+		return TEXT("PossiblyAvailable");
+	case ECommonUserAvailability::CurrentlyUnavailable:
+		return TEXT("CurrentlyUnavailable");
+	case ECommonUserAvailability::AlwaysUnavailable:
+		return TEXT("AlwaysUnavailable");
+	case ECommonUserAvailability::Invalid:
+		; // Intentional fall-through
+	}
+
+	return TEXT("Invalid");
+}
 
 /** Enum giving specific reasons why a user may or may not use a certain privilege */
 UENUM(BlueprintType)
@@ -179,6 +273,36 @@ enum class ECommonUserPrivilegeResult : uint8
 	PlatformFailure,
 };
 
+/** Convert a ECommonUserPrivilegeResult into a string */
+inline const TCHAR* LexToString(const ECommonUserPrivilegeResult Value)
+{
+	switch (Value)
+	{
+	case ECommonUserPrivilegeResult::Unknown:
+		return TEXT("Unknown");
+	case ECommonUserPrivilegeResult::Available:
+		return TEXT("Available");
+	case ECommonUserPrivilegeResult::UserNotLoggedIn:
+		return TEXT("UserNotLoggedIn");
+	case ECommonUserPrivilegeResult::LicenseInvalid:
+		return TEXT("LicenseInvalid");
+	case ECommonUserPrivilegeResult::VersionOutdated:
+		return TEXT("VersionOutdated");
+	case ECommonUserPrivilegeResult::NetworkConnectionUnavailable:
+		return TEXT("NetworkConnectionUnavailable");
+	case ECommonUserPrivilegeResult::AgeRestricted:
+		return TEXT("AgeRestricted");
+	case ECommonUserPrivilegeResult::AccountTypeRestricted:
+		return TEXT("AccountTypeRestricted");
+	case ECommonUserPrivilegeResult::AccountUseRestricted:
+		return TEXT("AccountUseRestricted");
+	case ECommonUserPrivilegeResult::PlatformFailure:
+		return TEXT("PlatformFailure");
+	}
+
+	return TEXT("Invalid");
+}
+
 /** Used to track the progress of different asynchronous operations */
 enum class ECommonUserAsyncTaskState : uint8
 {
@@ -191,6 +315,24 @@ enum class ECommonUserAsyncTaskState : uint8
 	/** The task failed to complete */
 	Failed
 };
+
+/** Convert a ECommonUserAsyncTaskState into a string */
+inline const TCHAR* LexToString(const ECommonUserAsyncTaskState Value)
+{
+	switch (Value)
+	{
+	case ECommonUserAsyncTaskState::NotStarted:
+		return TEXT("NotStarted");
+	case ECommonUserAsyncTaskState::InProgress:
+		return TEXT("InProgress");
+	case ECommonUserAsyncTaskState::Done:
+		return TEXT("Done");
+	case ECommonUserAsyncTaskState::Failed:
+		return TEXT("Failed");
+	}
+
+	return TEXT("Invalid");
+}
 
 /** Detailed information about the online error. Effectively a wrapper for FOnlineError. */
 USTRUCT(BlueprintType)

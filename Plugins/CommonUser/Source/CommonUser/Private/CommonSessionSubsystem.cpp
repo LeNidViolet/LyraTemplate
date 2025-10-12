@@ -316,11 +316,13 @@ int32 UCommonSession_HostSessionRequest::GetMaxPlayers() const
 void UCommonSessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+
+#if not WITH_SESSIONSUBSYSTEM_OSSV1
 	BindOnlineDelegates();
 	GEngine->OnTravelFailure().AddUObject(this, &UCommonSessionSubsystem::TravelLocalSessionFailure);
 
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &UCommonSessionSubsystem::HandlePostLoadMap);
-
+#endif
 	UGameInstance* GameInstance = GetGameInstance();
 	bIsDedicatedServer = GameInstance->IsDedicatedServerInstance();
 }
@@ -396,6 +398,8 @@ void UCommonSessionSubsystem::BindOnlineDelegatesOSSv2()
 
 void UCommonSessionSubsystem::Deinitialize()
 {
+
+#if not WITH_SESSIONSUBSYSTEM_OSSV1
 #if COMMONUSER_OSSV1
 	IOnlineSubsystem* OnlineSub = Online::GetSubsystem(GetWorld());
 
@@ -416,7 +420,7 @@ void UCommonSessionSubsystem::Deinitialize()
 	}
 
 	FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
-
+#endif
 	Super::Deinitialize();
 }
 

@@ -52,6 +52,9 @@ private:
 	bool bShouldShowLoadingScreen = true;
 
 	UPROPERTY(EditAnywhere, Category = UI)
+	bool bForceShowPressStartScreen = false;
+
+	UPROPERTY(EditAnywhere, Category = UI)
 	TSoftClassPtr<UCommonActivatableWidget> PressStartScreenClass;
 
 	UPROPERTY(EditAnywhere, Category = UI)

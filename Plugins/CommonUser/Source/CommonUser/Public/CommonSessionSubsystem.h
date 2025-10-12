@@ -16,6 +16,10 @@
 #endif
 
 
+#define WITH_SESSIONSUBSYSTEM_OSSV1 1
+
+
+
 
 class APlayerController;
 class AOnlineBeaconHost;
