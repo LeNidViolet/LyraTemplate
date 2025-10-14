@@ -1,34 +1,36 @@
 
 # Lyra Template for Unreal Engine 5
 
-Unreal Engine Version: 5.6.1 (Installed Build)
+Unreal Engine Version: 5.6.1 (Source Build)
 
 Lyra Version: Compatible with UE 5.6
 
-⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-
-Modifications Made
-
-1. Removed all original Content assets.
-2. Cleared any Project Settings references to the original Content.
-3. Added a minimal Experience implementation under the Default folder.
-4. Enabled Enhanced Input Support in Project Settings → Game → Common Input Settings.
-5. Removed the following plugins:
-   * LyraExtTool
-   * LyraExampleContent
-6. Added the plugin:
-   * EnhancedInputIcons
-   * GameFeaturePlugin->SimpleExperience
+Macos / Rider
 
 ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-When the game starts, it will load B_Experience_Default (via LyraGameMode).
-After that, it scans the available Game Feature Plugins (GFP) and creates a loading button for each GFP.
-SimpleExperience demonstrates how to implement a minimal GFP experience.
-It relies on the Lyra framework to provide basic character movement, crouching, and jumping, as well as some simple applications of CommonUI.
+This branch includes partial modifications to the Lyra source code.  
+For detailed information, please refer to the commit history.
 
 ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-dynamic_background branch:
-![DynamicBackground](res/DynamicBackground.jpg)
-The main menu uses BP_FrontendStateComponent for loading.
-BP_LobbyBackgroundLoader is added to load dynamic backgrounds, which are obtained by having the Asset Manager scan for assets of type LyraLobbyBackground.
+
+## Multiplayer Lobby (OSSv1) - Basic Functionality
+
+This branch provides the basic functionality for creating a multiplayer lobby and hosting games using **OSSv1** with a **local listen server**.
+
+To run the project properly with **Epic Online Services (EOS)**, please follow the setup guide below:
+
+🔗 [Using Epic Online Services with Lyra Starter Game](https://dev.epicgames.com/community/learning/tutorials/375e/unreal-engine-using-epic-online-services-with-lyra-starter-game)
+
+### Setup Instructions
+1. **Create and configure your EOS developer account**  
+   Follow the steps in the guide to register and set up your EOS project.
+
+2. **Add your EOS application credentials to the project configuration**  
+   Update your `DefaultEngine.ini` with your EOS application information.  
+   *(Recommended location: `Config/Custom/EOS/DefaultEngine.ini`)*
+
+⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+![Multiplayer1](res/Multiplayer1.jpg)
+![Multiplayer2](res/Multiplayer2.jpg)
+![Multiplayer3](res/Multiplayer3.jpg)

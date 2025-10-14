@@ -5,7 +5,6 @@
 
 #include "Engine/World.h"
 #include "CommonUserSubsystem.h"
-#include "CommonSessionSubsystemOssv1.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -41,13 +40,6 @@ void ALobbyPlayerState::OnRep_IsReady()
 void ALobbyPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
-
-	UCommonSessionSubsystemOssv1* SessionSubsystemOssv1 = GetGameInstance()->GetSubsystem<UCommonSessionSubsystemOssv1>();
-	check(SessionSubsystemOssv1);
-	if (SessionSubsystemOssv1)
-	{
-		SessionSubsystemOssv1->LogNetEnvironment(this, GetPlayerController());
-	}
 
 	if (GetPlayerController())
 	{
