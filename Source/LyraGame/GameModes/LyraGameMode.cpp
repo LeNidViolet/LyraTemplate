@@ -533,8 +533,33 @@ bool ALyraGameMode::TravelExperience(ULyraUserFacingExperienceDefinition* Facing
 		}
 	}
 
+	bool bExists = UGameplayStatics::HasOption(TravelURL, "Experience");
+	if (!bExists)
+	{
+		FName ExperienceName = FacingExperience->ExperienceID.PrimaryAssetName;
+		TravelURL += FString::Printf(TEXT("?Experience=%s"), *ExperienceName.ToString());
+	}
+
 	UE_LOG(LogLyra, Log, TEXT("Traveling to experience via URL %s"), *TravelURL);
 	return GetWorld()->ServerTravel(TravelURL, bAbsolute);
+}
+
+bool ALyraGameMode::TravelExperienceWithName(FName FacingExperience, TMap<FString, FString> ExtraArgs, bool bAbsolute,
+	ECommonSessionOnlineMode OnlineMode)
+{
+	UAssetManager* AssetManager = UAssetManager::GetIfInitialized();
+	ensure(AssetManager);
+	FPrimaryAssetId AssetId(TEXT("LyraUserFacingExperienceDefinition"), FacingExperience);
+	FSoftObjectPath AssetPath = AssetManager->GetPrimaryAssetPath(AssetId);
+	if (AssetPath.IsValid())
+	{
+		UObject* Asset = AssetManager->GetStreamableManager().LoadSynchronous(AssetPath, true);
+		if (ULyraUserFacingExperienceDefinition* FacingExperienceObject = Cast<ULyraUserFacingExperienceDefinition>(Asset))
+		{
+			return TravelExperience(FacingExperienceObject, ExtraArgs, bAbsolute, OnlineMode);
+		}
+	}
+	return false;
 }
 
 bool ALyraGameMode::UpdatePlayerStartSpot(AController* Player, const FString& Portal, FString& OutErrorMessage)

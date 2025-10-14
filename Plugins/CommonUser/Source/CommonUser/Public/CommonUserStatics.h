@@ -10,7 +10,7 @@ class UCommonUserStatics : public UBlueprintFunctionLibrary
 
 public:
 	UFUNCTION(BlueprintPure, Category="CommonUser")
-	static bool UniqueNetIdRepl_Equal(const FUniqueNetIdRepl& A, const FUniqueNetIdRepl& B)
+	static COMMONUSER_API bool UniqueNetIdRepl_Equal(const FUniqueNetIdRepl& A, const FUniqueNetIdRepl& B)
 	{
 		if (!A.IsValid() || !B.IsValid())
 		{
@@ -20,7 +20,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintPure, Category="CommonUser")
-	static FString UniqueNetIdRepl_ToString(const FUniqueNetIdRepl& ID)
+	static COMMONUSER_API FString UniqueNetIdRepl_ToString(const FUniqueNetIdRepl& ID)
 	{
 		if (ID.IsValid())
 		{

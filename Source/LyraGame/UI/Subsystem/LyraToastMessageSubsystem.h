@@ -15,7 +15,13 @@ struct FLyraToastMessage
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Toast Message")
-	FText Message;
+	FString StringValue;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Toast Message")
+	int32 NumberValue = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Toast Message")
+	bool BooleanValue = false;
 };
 
 
@@ -33,6 +39,12 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category="Toast Message")
 	FOnToastMessageReceived OnToastMessageReceived;
+
+	UPROPERTY(BlueprintAssignable, Category="Toast Message")
+	FOnToastMessageReceived OnToastLobbyMemberEventReveived;
+
+	UPROPERTY(BlueprintAssignable, Category="Toast Message")
+	FOnToastMessageReceived OnToastLobbyCountdownReveived;
 
 private:
 

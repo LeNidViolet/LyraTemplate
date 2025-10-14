@@ -75,6 +75,14 @@ public:
 		ECommonSessionOnlineMode OnlineMode=ECommonSessionOnlineMode::Offline
 		);
 
+	UFUNCTION(BlueprintCallable, Category = "Lyra|Experience")
+	UE_API bool TravelExperienceWithName(
+		FName FacingExperience,
+		TMap<FString, FString> ExtraArgs,
+		bool bAbsolute = true,
+		ECommonSessionOnlineMode OnlineMode=ECommonSessionOnlineMode::Offline
+		);
+
 	// Agnostic version of PlayerCanRestart that can be used for both player bots and players
 	UE_API virtual bool ControllerCanRestart(AController* Controller);
 

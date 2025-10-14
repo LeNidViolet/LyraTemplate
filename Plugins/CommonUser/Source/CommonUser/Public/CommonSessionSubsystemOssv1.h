@@ -26,9 +26,9 @@ public:
 
 	UCommonSessionSubsystemOssv1();
 
-	COMMONUSER_API virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-	COMMONUSER_API virtual void Deinitialize() override;
-	COMMONUSER_API virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
+	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
 	UFUNCTION(BlueprintPure, Category = Session)
 	COMMONUSER_API FName GetLobbyName() const { return FName(TEXT("GameLobby_Ossv1")); }
@@ -59,9 +59,12 @@ public:
 
 	COMMONUSER_API void CleanupSession(FName SessionName);
 
+	UFUNCTION(BlueprintCallable, Category = "Networking|Debug")
+	COMMONUSER_API void LogNetEnvironment(AActor* Actor, APlayerController* PlayerController = nullptr);
+
 protected:
-	COMMONUSER_API void BindOnlineDelegates();
-	COMMONUSER_API void UnbindOnlineDelegates();
+	void BindOnlineDelegates();
+	void UnbindOnlineDelegates();
 
 	FDelegateHandle OnLoginCompleteDelegate;
 	void OnLoginComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error);

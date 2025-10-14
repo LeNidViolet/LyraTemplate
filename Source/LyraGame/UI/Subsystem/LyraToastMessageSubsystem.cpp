@@ -7,7 +7,9 @@
 #include "GameFramework/GameplayMessageSubsystem.h"
 
 
-UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_TOAST_MESSAGE, "ToastMessage")
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Toast_Message, "ToastMessage")
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Toast_Message_Lobby_MemberEvent, "ToastMessage.Lobby.MemberEvent")
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Toast_Message_Lobby_Countdown, "ToastMessage.Lobby.Countdown")
 
 
 void ULyraToastMessageSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -16,7 +18,7 @@ void ULyraToastMessageSubsystem::Initialize(FSubsystemCollectionBase& Collection
 
 	UGameplayMessageSubsystem& MessageSystem = UGameplayMessageSubsystem::Get(GetWorld());
 	ToastMessageListener = MessageSystem.RegisterListener<FLyraToastMessage>(
-		TAG_TOAST_MESSAGE,
+		TAG_Toast_Message,
 		[this](FGameplayTag Channel, const FLyraToastMessage& Payload)
 		{
 			if (this)
@@ -41,5 +43,16 @@ void ULyraToastMessageSubsystem::Deinitialize()
 
 void ULyraToastMessageSubsystem::HandleToastMessage(FGameplayTag Channel, const FLyraToastMessage& Payload)
 {
-	OnToastMessageReceived.Broadcast(Channel, Payload);
+	if (Channel.MatchesTagExact(TAG_Toast_Message_Lobby_MemberEvent))
+	{
+		OnToastLobbyMemberEventReveived.Broadcast(Channel, Payload);
+	}
+	else if (Channel.MatchesTagExact(TAG_Toast_Message_Lobby_Countdown))
+	{
+		OnToastLobbyCountdownReveived.Broadcast(Channel, Payload);
+	}
+	else
+	{
+		OnToastMessageReceived.Broadcast(Channel, Payload);
+	}
 }

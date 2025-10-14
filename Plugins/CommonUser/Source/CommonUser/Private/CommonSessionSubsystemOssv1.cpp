@@ -395,3 +395,69 @@ void UCommonSessionSubsystemOssv1::NotifySessionParticipantLeft(FName SessionNam
 	OnSessionParticipantLeftEvent.Broadcast(SessionName, UniqueIdRepl);
 	K2_OnSessionParticipantLeftEvent.Broadcast(SessionName, UniqueIdRepl);
 }
+
+
+FName GetNetModeName(ENetMode NetMode)
+{
+	switch (NetMode)
+	{
+	case ENetMode::NM_DedicatedServer: return FName(TEXT("NM_DedicatedServer"));
+	case ENetMode::NM_Client: return FName(TEXT("NM_Client"));
+	case ENetMode::NM_ListenServer: return FName(TEXT("NM_ListenServer"));
+	case ENetMode::NM_Standalone: return FName(TEXT("NM_Standalone"));
+	default: return FName(TEXT("Unknown"));
+	}
+}
+
+void UCommonSessionSubsystemOssv1::LogNetEnvironment(AActor* Actor, APlayerController* PlayerController)
+{
+
+	UE_LOG(LogCommonSessionOssv1, Log, TEXT("LogNetEnvironment>>>>>>>>>>>>>>>> Actor[%s] PlayerController[%s]"),
+		Actor ? *Actor->GetName() : TEXT("NONAME"),
+		PlayerController ? *PlayerController->GetName() : TEXT("NONAME")
+		);
+
+	// Global
+	UE_LOG(LogCommonSessionOssv1, Log, TEXT("LogNetEnvironment IsRunningDedicatedServer[%s]"), IsRunningDedicatedServer() ? TEXT("True") : TEXT("False"));
+	UE_LOG(LogCommonSessionOssv1, Log, TEXT("LogNetEnvironment IsRunningClientOnly[%s]"), IsRunningClientOnly() ? TEXT("True") : TEXT("False"));
+	UE_LOG(LogCommonSessionOssv1, Log, TEXT("LogNetEnvironment IsRunningGame[%s]"), IsRunningGame() ? TEXT("True") : TEXT("False"))
+
+	// Net Mode
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		ENetMode WorldNetMode = World->GetNetMode();
+		UE_LOG(LogCommonSessionOssv1, Log, TEXT("LogNetEnvironment WorldNetMode[%s]"), *GetNetModeName(WorldNetMode).ToString());
+
+	}
+	else
+	{
+		UE_LOG(LogCommonSessionOssv1, Warning, TEXT("LogNetEnvironment GetWorld() Failed"));
+	}
+
+	if (Actor)
+	{
+		ENetMode ActorNetMode = Actor->GetNetMode();
+		UE_LOG(LogCommonSessionOssv1, Log, TEXT("LogNetEnvironment Actor NetMode[%s]"), *GetNetModeName(ActorNetMode).ToString());
+
+		// Role
+		ENetRole LocalRole = Actor->GetLocalRole();
+		ENetRole RemoteRole = Actor->GetRemoteRole();
+		UE_LOG(LogCommonSessionOssv1, Log, TEXT("LogNetEnvironment Actor LocalRole[%s]"), *UEnum::GetValueAsString(LocalRole));
+		UE_LOG(LogCommonSessionOssv1, Log, TEXT("LogNetEnvironment Actor RemoteRole[%s]"), *UEnum::GetValueAsString(RemoteRole));
+
+		// Authority (GetLocalRole() == ROLE_Authority);
+		UE_LOG(LogCommonSessionOssv1, Log, TEXT("LogNetEnvironment Actor Authority[%s]"), Actor->HasAuthority() ? TEXT("True") : TEXT("False"))
+	}
+
+	if (PlayerController)
+	{
+		UE_LOG(LogCommonSessionOssv1, Log, TEXT("LogNetEnvironment PlayerController IsLocalController[%s]"), PlayerController->IsLocalController() ? TEXT("True") : TEXT("False"))
+		UE_LOG(LogCommonSessionOssv1, Log, TEXT("LogNetEnvironment PlayerController IsLocalPlayerController[%s]"), PlayerController->IsLocalPlayerController() ? TEXT("True") : TEXT("False"))
+	}
+
+	UE_LOG(LogCommonSessionOssv1, Log, TEXT("LogNetEnvironment<<<<<<<<<<<<<<<< Actor[%s] PlayerController[%s]"),
+		Actor ? *Actor->GetName() : TEXT("NONAME"),
+		PlayerController ? *PlayerController->GetName() : TEXT("NONAME")
+		);
+}
