@@ -12,21 +12,32 @@ bool FIndicatorProjection::Project(const UIndicatorDescriptor& IndicatorDescript
 {
 	if (USceneComponent* Component = IndicatorDescriptor.GetSceneComponent())
 	{
+		const EActorCanvasProjectionMode ProjectionMode = IndicatorDescriptor.GetProjectionMode();
+
 		TOptional<FVector> WorldLocation;
-		if (IndicatorDescriptor.GetComponentSocketName() != NAME_None)
+		if (ProjectionMode != EActorCanvasProjectionMode::WorldPoint)
 		{
-			WorldLocation = Component->GetSocketTransform(IndicatorDescriptor.GetComponentSocketName()).GetLocation();
+			if (IndicatorDescriptor.GetComponentSocketName() != NAME_None)
+			{
+				WorldLocation = Component->GetSocketTransform(IndicatorDescriptor.GetComponentSocketName()).GetLocation();
+			}
+			else
+			{
+				WorldLocation = Component->GetComponentLocation();
+			}
 		}
 		else
 		{
-			WorldLocation = Component->GetComponentLocation();
+			WorldLocation = IndicatorDescriptor.GetWorldPosition();
 		}
 
+
 		const FVector ProjectWorldLocation = WorldLocation.GetValue() + IndicatorDescriptor.GetWorldPositionOffset();
-		const EActorCanvasProjectionMode ProjectionMode = IndicatorDescriptor.GetProjectionMode();
+
 		
 		switch (ProjectionMode)
 		{
+			case EActorCanvasProjectionMode::WorldPoint:
 			case EActorCanvasProjectionMode::ComponentPoint:
 			{
 				if (WorldLocation.IsSet())

@@ -24,6 +24,7 @@ struct FIndicatorProjection
 UENUM(BlueprintType)
 enum class EActorCanvasProjectionMode : uint8
 {
+	WorldPoint,
 	ComponentPoint,
 	ComponentBoundingBox,
 	ComponentScreenBoundingBox,
@@ -35,7 +36,7 @@ enum class EActorCanvasProjectionMode : uint8
  * Describes and controls an active indicator.  It is highly recommended that your widget implements
  * IActorIndicatorWidget so that it can 'bind' to the associated data.
  */
-UCLASS(MinimalAPI, BlueprintType)
+UCLASS(MinimalAPI, BlueprintType, Blueprintable)
 class UIndicatorDescriptor : public UObject
 {
 	GENERATED_BODY()
@@ -168,6 +169,14 @@ public:
 		BoundingBoxAnchor = InBoundingBoxAnchor;
 	}
 
+	UFUNCTION(BlueprintCallable)
+	FVector GetWorldPosition() const { return WorldPosition; }
+	UFUNCTION(BlueprintCallable)
+	void SetWorldPosition(FVector InWorldPosition)
+	{
+		WorldPosition = InWorldPosition;
+	}
+
 public:
 	// Sorting Properties
 	//=======================
@@ -189,49 +198,70 @@ public:
 	UFUNCTION(BlueprintCallable)
 	UE_API void UnregisterIndicator();
 
-private:
-	UPROPERTY()
+protected:
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
 	bool bVisible = true;
-	UPROPERTY()
+
+	// Clamp the indicator to the edge of the screen?
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
 	bool bClampToScreen = false;
-	UPROPERTY()
+
+	// Show the arrow if clamping to the edge of the screen?
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
 	bool bShowClampToScreenArrow = false;
-	UPROPERTY()
-	bool bOverrideScreenPosition = false;
-	UPROPERTY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
 	bool bAutoRemoveWhenIndicatorComponentIsNull = false;
 
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
 	EActorCanvasProjectionMode ProjectionMode = EActorCanvasProjectionMode::ComponentPoint;
-	UPROPERTY()
+
+	// Horizontal alignment to the point in space to place the indicator at.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
 	TEnumAsByte<EHorizontalAlignment> HAlignment = HAlign_Center;
-	UPROPERTY()
+
+	// Vertical alignment to the point in space to place the indicator at.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
 	TEnumAsByte<EVerticalAlignment> VAlignment = VAlign_Center;
 
-	UPROPERTY()
+	// Allows sorting the indicators (after they are sorted by depth), to allow some group of indicators
+	// to always be in front of others.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
 	int32 Priority = 0;
 
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
 	FVector BoundingBoxAnchor = FVector(0.5, 0.5, 0.5);
-	UPROPERTY()
+
+	// The position offset for the indicator in screen space.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
 	FVector2D ScreenSpaceOffset = FVector2D(0, 0);
-	UPROPERTY()
+
+	// The position offset for the indicator in world space.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
 	FVector WorldPositionOffset = FVector(0, 0, 0);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
+	TSoftClassPtr<UUserWidget> IndicatorWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
+	FName ComponentSocketName = NAME_None;
+
+	// The position for the indicator in world space. (when EActorCanvasProjectionMode WorldPoint)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
+	FVector WorldPosition = FVector(0, 0, 0);
 
 private:
 	friend class SActorCanvas;
+
+	UPROPERTY()
+	bool bOverrideScreenPosition = false;
 
 	UPROPERTY()
 	TObjectPtr<UObject> DataObject;
 	
 	UPROPERTY()
 	TObjectPtr<USceneComponent> Component;
-
-	UPROPERTY()
-	FName ComponentSocketName = NAME_None;
-
-	UPROPERTY()
-	TSoftClassPtr<UUserWidget> IndicatorWidgetClass;
 
 	UPROPERTY()
 	TWeakObjectPtr<ULyraIndicatorManagerComponent> ManagerPtr;

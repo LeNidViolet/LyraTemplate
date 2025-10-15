@@ -5,7 +5,7 @@
 
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "NativeGameplayTags.h"
-#include "UI/Subsystem/LyraToastMessageSubsystem.h"
+#include "UI/Misc/LyraToastMessage.h"
 
 
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Toast_Message_Lobby_MemberEvent, "ToastMessage.Lobby.MemberEvent")

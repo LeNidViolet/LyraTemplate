@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "LyraMarkerManagerComponent.h"
+#include "LyraNameplateManagerComonpent.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 
 #include "IndicatorLibrary.generated.h"
@@ -24,6 +26,12 @@ public:
 	/**  */
 	UFUNCTION(BlueprintCallable, Category = Indicator)
 	static UE_API ULyraIndicatorManagerComponent* GetIndicatorManagerComponent(AController* Controller);
+
+	UFUNCTION(BlueprintCallable, Category = Indicator)
+	static UE_API ULyraMarkerManagerComponent* GetMarkerManagerComponent(AController* Controller);
+
+	UFUNCTION(BlueprintCallable, Category = Indicator)
+	static UE_API ULyraNameplateManagerComonpent* GetNameplateManagerComponent(AController* Controller);
 };
 
 #undef UE_API
