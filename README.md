@@ -13,6 +13,11 @@ This branch includes partial modifications to the Lyra source code.
 For detailed information, please refer to the commit history.
 
 ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+## Marker 
+This branch enhances Lyra’s marker feature with some modifications to the original source.
+See the commit history for details.
+![Marker](res/Marker.jpg)
+⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 ## Multiplayer Lobby (OSSv1) - Basic Functionality
 
