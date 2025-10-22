@@ -30,22 +30,22 @@ public:
 	virtual void Deinitialize() override;
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
-	UFUNCTION(BlueprintPure, Category = Session)
+	UFUNCTION(BlueprintPure, Category = "Session")
 	COMMONUSER_API FName GetLobbyName() const { return FName(TEXT("GameLobby_Ossv1")); }
 
-	UFUNCTION(BlueprintPure, Category = Session)
+	UFUNCTION(BlueprintPure, Category = "Session")
 	COMMONUSER_API FName GetSessionName() const { return FName(TEXT("GameSession_Ossv1")); }
 
-	UFUNCTION(BlueprintPure, Category = Session)
+	UFUNCTION(BlueprintPure, Category = "Session")
 	COMMONUSER_API bool IsLobbyName(FName Name) const { return Name == GetLobbyName(); }
 
-	UFUNCTION(BlueprintPure, Category = Session)
+	UFUNCTION(BlueprintPure, Category = "Session")
 	COMMONUSER_API bool IsSessionName(FName Name) const { return Name == GetSessionName(); }
 
-	UFUNCTION(BlueprintPure, Category = Session)
+	UFUNCTION(BlueprintPure, Category = "Session")
 	COMMONUSER_API bool IsLocalUserNetId(const FUniqueNetIdRepl& NetId) const;
 
-	UFUNCTION(BlueprintPure, Category = Session)
+	UFUNCTION(BlueprintPure, Category = "Session")
 	COMMONUSER_API bool IsSessionOwnerNetId(FName SessionName, const FUniqueNetIdRepl& NetId) const;
 
 	// EVENTs
@@ -56,8 +56,6 @@ public:
 	FOnSessionParticipantLeft_C OnSessionParticipantLeftEvent;
 	UPROPERTY(BlueprintAssignable, Category = "Session", meta = (DisplayName = "On Participant Left"))
 	FOnSessionParticipantLeft_Dynamic K2_OnSessionParticipantLeftEvent;
-
-	COMMONUSER_API void CleanupSession(FName SessionName);
 
 	UFUNCTION(BlueprintCallable, Category = "Networking|Debug")
 	COMMONUSER_API void LogNetEnvironment(AActor* Actor, APlayerController* PlayerController = nullptr);
@@ -107,8 +105,7 @@ protected:
 	void NotifySessionParticipantLeft(FName SessionName, const FUniqueNetId& UniqueId);
 
 private:
-	/** True if we want to cancel the session after it is created */
-	bool bWantToDestroyPendingSession = false;
+
 	/** True if this is a dedicated server, which doesn't require a LocalPlayer to create a session */
 	bool bIsDedicatedServer = false;
 };

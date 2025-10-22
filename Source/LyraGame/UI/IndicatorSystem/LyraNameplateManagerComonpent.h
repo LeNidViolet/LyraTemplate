@@ -11,43 +11,13 @@
 
 #define UE_API LYRAGAME_API
 
+
+struct FOnRemoveNameplateParameters;
+struct FOnAddNameplateParameters;
 class ULyraNameplateManagerComonpent;
 
-USTRUCT(BlueprintType)
-struct FLyraMessageNameplateInfoAdd
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="NameplateInfo")
-	TObjectPtr<APawn> Pawn;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="NameplateInfo")
-	TSubclassOf<UIndicatorDescriptor> DescriptorClass;
-};
-
-USTRUCT(BlueprintType)
-struct FLyraMessageNameplateInfoRemove
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="NameplateInfo")
-	TObjectPtr<APawn> Pawn;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="NameplateInfo")
-	TObjectPtr<UIndicatorDescriptor> DescriptorObject;
-};
-
-USTRUCT(BlueprintType)
-struct FLyraMessageNameplateRequest
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="NameplateRequest")
-	TObjectPtr<ULyraNameplateManagerComonpent> NameplateManagerComonpent;
-};
-
 USTRUCT()
-struct FLyraMessageNameplateCreatedEntry
+struct FNameplateCreatedEntry
 {
 	GENERATED_BODY()
 
@@ -80,12 +50,12 @@ private:
 	void Deinitialize();
 
 	FGameplayMessageListenerHandle NameplateAddEventListener;
-	void HandleNameplateAddEvent(FGameplayTag Channel, const FLyraMessageNameplateInfoAdd& Payload);
+	void HandleAddNameplateEvent(FGameplayTag Channel, const FOnAddNameplateParameters& Parameters);
 
 	FGameplayMessageListenerHandle NameplateRemoveEventListener;
-	void HandleNameplateRemoveEvent(FGameplayTag Channel, const FLyraMessageNameplateInfoRemove& Payload);
+	void HandleRemoveNameplateEvent(FGameplayTag Channel, const FOnRemoveNameplateParameters& Parameters);
 
-	TArray<FLyraMessageNameplateCreatedEntry> NameplateList;
+	TArray<FNameplateCreatedEntry> NameplateList;
 };
 
 #undef UE_API

@@ -1,14 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "LobbyPlayerState.h"
+#include "LyraLobbyPlayerState.h"
 
 #include "Engine/World.h"
 #include "CommonUserSubsystem.h"
 #include "Net/UnrealNetwork.h"
 
 
-void ALobbyPlayerState::RPC_SetReady_Implementation(bool bNewReadyState)
+void ALyraLobbyPlayerState::RPC_SetReady_Implementation(bool bNewReadyState)
 {
 	if (bIsReady != bNewReadyState)
 	{
@@ -22,7 +22,7 @@ void ALobbyPlayerState::RPC_SetReady_Implementation(bool bNewReadyState)
 	}
 }
 
-void ALobbyPlayerState::RPC_SetDisplayName_Implementation(FName DisplayName)
+void ALyraLobbyPlayerState::RPC_SetDisplayName_Implementation(FName DisplayName)
 {
 	if (DisplayName != PlayerDisplayName)
 	{
@@ -31,13 +31,13 @@ void ALobbyPlayerState::RPC_SetDisplayName_Implementation(FName DisplayName)
 }
 
 
-void ALobbyPlayerState::OnRep_IsReady()
+void ALyraLobbyPlayerState::OnRep_IsReady()
 {
 	K2_OnPlayerReadyStateChangedEvent.Broadcast(this);
 }
 
 
-void ALobbyPlayerState::BeginPlay()
+void ALyraLobbyPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -56,10 +56,10 @@ void ALobbyPlayerState::BeginPlay()
 }
 
 
-void ALobbyPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void ALyraLobbyPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ALobbyPlayerState, bIsReady);
-	DOREPLIFETIME(ALobbyPlayerState, PlayerDisplayName);
+	DOREPLIFETIME(ALyraLobbyPlayerState, bIsReady);
+	DOREPLIFETIME(ALyraLobbyPlayerState, PlayerDisplayName);
 }

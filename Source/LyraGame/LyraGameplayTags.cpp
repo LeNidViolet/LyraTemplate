@@ -55,6 +55,24 @@ namespace LyraGameplayTags
 	// When extending Lyra, you can create your own movement modes but you need to update GetCustomMovementModeTagMap()
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Movement_Mode_Custom, "Movement.Mode.Custom", "This is invalid and should be replaced with custom tags.  See LyraGameplayTags::CustomMovementModeTagMap.");
 
+
+
+
+	// GameplayTag
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Nameplate_Add, "Gameplay.Message.Nameplate.Add", "Indicates a request to add/display a nameplate for an entity.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Nameplate_Remove, "Gameplay.Message.Nameplate.Remove", "Indicates a request to remove/hide a nameplate for an entity.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Nameplate_Discover, "Gameplay.Message.Nameplate.Discover", "Indicates a new entity has been discovered (e.g., entered vision), typically followed by an Add request.");
+
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Marker_Add, "Gameplay.Message.Marker.Add", "Indicates a request to add/display a world marker.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Marker_Remove, "Gameplay.Message.Marker.Remove", "Indicates a request to remove/hide a world marker");
+
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(ToastMessage_Lobby_MemberEvent, "ToastMessage.Lobby.MemberEvent", "Toast message for when a member joins or leaves the current lobby.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(ToastMessage_Lobby_Countdown, "ToastMessage.Lobby.Countdown", "Toast message for displaying a countdown timer in the lobby.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(ToastMessage_Session_MemberEvent, "ToastMessage.Session.MemberEvent", "Toast message for when a member joins or leaves the active game session.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(UI_Navi_Focus, "UI.Navi.Focus", "Used to indicate which UI element currently has navigation focus.");
+
+
+
 	// Unreal Movement Modes
 	const TMap<uint8, FGameplayTag> MovementModeTagMap =
 	{

@@ -30,6 +30,9 @@ struct FLyraVerbMessageReplicationEntry : public FFastArraySerializerItem
 
 	FString GetDebugString() const;
 
+	void SetTimeCreated(float InTime);
+	float TimeCreated = 0.f;
+
 private:
 	friend FLyraVerbMessageReplication;
 
@@ -66,6 +69,7 @@ public:
 
 private:
 	void RebroadcastMessage(const FLyraVerbMessage& Message);
+	void CleanupExpiredMessages(float MaxAgeSeconds);
 
 private:
 	// Replicated list of gameplay tag stacks

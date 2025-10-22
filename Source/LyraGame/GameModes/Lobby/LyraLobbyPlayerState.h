@@ -4,19 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "Player/LyraPlayerState.h"
-#include "CommonUserSubsystem.h"
-#include "LobbyPlayerState.generated.h"
+#include "LyraLobbyPlayerState.generated.h"
 
 #define UE_API LYRAGAME_API
 
-class ALobbyPlayerState;
+class ALyraLobbyPlayerState;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnPlayerReadyStateChanged, ALobbyPlayerState* /*PlayerState*/);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerReadyStateChanged_Dynamic, ALobbyPlayerState*, PlayerState);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnPlayerReadyStateChanged, ALyraLobbyPlayerState* /*PlayerState*/);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerReadyStateChanged_Dynamic, ALyraLobbyPlayerState*, PlayerState);
 
 
 UCLASS(MinimalAPI)
-class ALobbyPlayerState : public ALyraPlayerState
+class ALyraLobbyPlayerState : public ALyraPlayerState
 {
 	GENERATED_BODY()
 

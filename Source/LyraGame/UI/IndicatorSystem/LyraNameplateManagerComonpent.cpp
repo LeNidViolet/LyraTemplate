@@ -5,11 +5,12 @@
 
 #include "LyraIndicatorManagerComponent.h"
 #include "NativeGameplayTags.h"
+#include "LyraGameplayTags.h"
+#include "GameFramework/Character.h"
+#include "Components/CapsuleComponent.h"
+#include "Messages/LyraNotificationMessage_Nameplate.h"
 #include "Player/LyraPlayerController.h"
 
-UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Message_Nameplate_Add, TEXT("Gameplay.Message.Nameplate.Add"))
-UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Message_Nameplate_Remove, TEXT("Gameplay.Message.Nameplate.Remove"))
-UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Message_Nameplate_Discover, TEXT("Gameplay.Message.Nameplate.Discover"))
 
 
 // Sets default values for this component's properties
@@ -79,19 +80,19 @@ bool ULyraNameplateManagerComonpent::Initialize()
 		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
 		if (MessageSubsystem)
 		{
-			NameplateAddEventListener = MessageSubsystem->RegisterListener<FLyraMessageNameplateInfoAdd>(
-				TAG_Message_Nameplate_Add,
+			NameplateAddEventListener = MessageSubsystem->RegisterListener<FOnAddNameplateParameters>(
+				LyraGameplayTags::Gameplay_Message_Nameplate_Add,
 				this,
-				&ThisClass::HandleNameplateAddEvent);
+				&ThisClass::HandleAddNameplateEvent);
 
-			NameplateRemoveEventListener = MessageSubsystem->RegisterListener<FLyraMessageNameplateInfoRemove>(
-				TAG_Message_Nameplate_Remove,
+			NameplateRemoveEventListener = MessageSubsystem->RegisterListener<FOnRemoveNameplateParameters>(
+			LyraGameplayTags::Gameplay_Message_Nameplate_Remove,
 				this,
-				&ThisClass::HandleNameplateRemoveEvent);
+				&ThisClass::HandleRemoveNameplateEvent);
 
-			FLyraMessageNameplateRequest NameplateRequest;
+			FClientRequestNameplateParameters NameplateRequest;
 			NameplateRequest.NameplateManagerComonpent = this;
-			MessageSubsystem->BroadcastMessage(TAG_Message_Nameplate_Discover, NameplateRequest);
+			MessageSubsystem->BroadcastMessage(LyraGameplayTags::Gameplay_Message_Nameplate_Discover, NameplateRequest);
 
 			Result = true;
 		}
@@ -119,7 +120,7 @@ void ULyraNameplateManagerComonpent::Deinitialize()
 		}
 	}
 
-	for (const FLyraMessageNameplateCreatedEntry& NameplateEntry  : NameplateList)
+	for (const FNameplateCreatedEntry& NameplateEntry  : NameplateList)
 	{
 		if (NameplateEntry.DescriptorObject.IsValid())
 		{
@@ -129,18 +130,29 @@ void ULyraNameplateManagerComonpent::Deinitialize()
 	NameplateList.Empty();
 }
 
-void ULyraNameplateManagerComonpent::HandleNameplateAddEvent(
+void ULyraNameplateManagerComonpent::HandleAddNameplateEvent(
 	FGameplayTag Channel,
-	const FLyraMessageNameplateInfoAdd& Payload)
+	const FOnAddNameplateParameters& Parameters)
 {
 	// Register Nameplate Source
 
-	UIndicatorDescriptor* Descriptor = NewObject<UIndicatorDescriptor>(this, Payload.DescriptorClass);
-	Descriptor->SetDataObject(Payload.Pawn);
+	UIndicatorDescriptor* Descriptor = NewObject<UIndicatorDescriptor>(this, Parameters.DescriptorClass);
+	ACharacter* Character = Cast<ACharacter>(Parameters.Pawn);
+	if (Character)
+	{
+		Descriptor->SetSceneComponent(Character->GetCapsuleComponent());
+	}
+	else
+	{
+		Descriptor->SetSceneComponent(Parameters.Pawn->GetRootComponent());
+	}
 
-	FLyraMessageNameplateCreatedEntry NameplateEntry;
-	NameplateEntry.Pawn = Payload.Pawn;
-	NameplateEntry.DescriptorClass = Payload.DescriptorClass;
+
+	Descriptor->SetDataObject(Parameters.Pawn);
+
+	FNameplateCreatedEntry NameplateEntry;
+	NameplateEntry.Pawn = Parameters.Pawn;
+	NameplateEntry.DescriptorClass = Parameters.DescriptorClass;
 	NameplateEntry.DescriptorObject = Descriptor;
 	NameplateList.Add(NameplateEntry);
 
@@ -151,30 +163,25 @@ void ULyraNameplateManagerComonpent::HandleNameplateAddEvent(
 		if (IndicatorManager)
 		{
 			IndicatorManager->AddIndicator(Descriptor);
-
-			UE_LOG(LogTemp, Warning, TEXT("HandleNameplateAddEvent IndicatorManager->AddIndicator"));
 		}
 	}
 }
 
 
-void ULyraNameplateManagerComonpent::HandleNameplateRemoveEvent(
+void ULyraNameplateManagerComonpent::HandleRemoveNameplateEvent(
 	FGameplayTag Channel,
-	const FLyraMessageNameplateInfoRemove& Payload)
+	const FOnRemoveNameplateParameters& Parameters)
 {
 	// Unregister Nameplate Source
 
 	for (int32 i = 0; i < NameplateList.Num(); ++i)
 	{
-		const FLyraMessageNameplateCreatedEntry& NameplateEntry = NameplateList[i];
+		const FNameplateCreatedEntry& NameplateEntry = NameplateList[i];
 
 		if (NameplateEntry.DescriptorObject.IsValid() &&
-			Payload.Pawn == NameplateEntry.Pawn &&
-			Payload.DescriptorObject == NameplateEntry.DescriptorObject.Get())
+			Parameters.Pawn == NameplateEntry.Pawn)
 		{
 			NameplateEntry.DescriptorObject.Get()->UnregisterIndicator();
-			UE_LOG(LogTemp, Warning, TEXT("HandleNameplateRemoveEvent IndicatorManager->UnregisterIndicator"));
-
 			NameplateList.RemoveAt(i);
 			break;
 		}

@@ -4,7 +4,6 @@
 
 #include "CommonLocalPlayer.h"
 #include "CommonSessionSubsystem.h"
-#include "CommonSessionSubsystemOssv1.h"
 #include "CommonUISettings.h"
 #include "CommonUserSubsystem.h"
 #include "GameUIManagerSubsystem.h"
@@ -126,20 +125,11 @@ void UCommonGameInstance::ResetUserAndSessionState()
 		UserSubsystem->ResetUserState();
 	}
 
-#if not WITH_SESSIONSUBSYSTEM_OSSV1
 	UCommonSessionSubsystem* SessionSubsystem = GetSubsystem<UCommonSessionSubsystem>();
 	if (ensure(SessionSubsystem))
 	{
 		SessionSubsystem->CleanUpSessions();
 	}
-#else
-	UCommonSessionSubsystemOssv1* SessionSubsystem = GetSubsystem<UCommonSessionSubsystemOssv1>();
-	if (ensure(SessionSubsystem))
-	{
-		SessionSubsystem->CleanupSession(SessionSubsystem->GetLobbyName());
-		SessionSubsystem->CleanupSession(SessionSubsystem->GetSessionName());
-	}
-#endif
 }
 
 void UCommonGameInstance::ReturnToMainMenu()

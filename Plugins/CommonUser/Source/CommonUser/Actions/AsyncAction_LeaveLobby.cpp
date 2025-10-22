@@ -6,14 +6,15 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "Interfaces/OnlineSessionInterface.h"
-#include "CommonSessionSubsystemOssv1.h"
+#include "AsyncAction_LogChannel.h"
+
 
 
 UAsyncAction_LeaveLobby* UAsyncAction_LeaveLobby::LeaveLobby(UObject* WorldContextObject)
 {
 	if (!WorldContextObject)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UAsyncAction_LeaveLobby::LeaveLobby: Invalid parameters"));
+		UE_LOG(LogCommonSessionAsyncAction, Error, TEXT("UAsyncAction_LeaveLobby::LeaveLobby: Invalid parameters"));
 		return nullptr;
 	}
 	UAsyncAction_LeaveLobby* Action = NewObject<UAsyncAction_LeaveLobby>();
@@ -35,9 +36,7 @@ void UAsyncAction_LeaveLobby::Execute_LeaveLobby()
 	{
 		if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
 		{
-			UCommonSessionSubsystemOssv1* SessionSubsystem = UGameInstance::GetSubsystem<UCommonSessionSubsystemOssv1>(WorldContextObject->GetWorld()->GetGameInstance());
-			check(SessionSubsystem);
-			SessionPtr->EndSession(SessionSubsystem->GetLobbyName());
+			SessionPtr->EndSession(NAME_GameSession);
 
 			bSuccess = true;
 		}

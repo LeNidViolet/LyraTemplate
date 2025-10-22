@@ -7,6 +7,7 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "AsyncAction_LogChannel.h"
 
 
 
@@ -18,7 +19,7 @@ UAsyncAction_GetLobbyBasicInfo* UAsyncAction_GetLobbyBasicInfo::GetLobbyBasicInf
 {
 	if (!Player || !WorldContextObject || LobbyId.IsEmpty())
 	{
-		UE_LOG(LogTemp, Error, TEXT("UAsyncAction_GetLobbyBasicInfo::GetLobbyBasicInfo: Invalid parameters"));
+		UE_LOG(LogCommonSessionAsyncAction, Error, TEXT("UAsyncAction_GetLobbyBasicInfo::GetLobbyBasicInfo: Invalid parameters"));
 		return nullptr;
 	}
 

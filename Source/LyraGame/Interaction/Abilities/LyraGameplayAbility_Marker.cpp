@@ -4,8 +4,10 @@
 #include "LyraGameplayAbility_Marker.h"
 
 #include "Blueprint/UserWidget.h"
+#include "GameFramework/PlayerState.h"
 #include "Player/LyraPlayerController.h"
 #include "Interaction/IInteractableMarker.h"
+#include "UI/IndicatorSystem/LyraMarkerManagerComponent.h"
 
 
 ULyraGameplayAbility_Marker::ULyraGameplayAbility_Marker(const FObjectInitializer& ObjectInitializer)
@@ -58,11 +60,35 @@ bool ULyraGameplayAbility_Marker::IsAimingAtMarker() const
 
 UIndicatorDescriptor* ULyraGameplayAbility_Marker::GetAimingMarker() const
 {
-	if (IsAimingAtMarker() && MarkerInstance.IsValid() && MarkerInstance->DescriptorObject.IsValid())
+	if (IsAimingAtMarker() && LocalPlayerMarkerInstance.IsValid() && LocalPlayerMarkerInstance->DescriptorObject.IsValid())
 	{
-		return MarkerInstance->DescriptorObject.Get();
+		return LocalPlayerMarkerInstance->DescriptorObject.Get();
 	}
 	return nullptr;
+}
+
+FGuid ULyraGameplayAbility_Marker::GetLocalPlayerMarkerId(bool& bSuccess)
+{
+	if (!LocalPlayerMarkerInstance.IsValid() || !LocalPlayerMarkerInstance->DescriptorObject.IsValid())
+	{
+		ALyraPlayerController* PlayerController = GetLyraPlayerControllerFromActorInfo();
+		if (PlayerController)
+		{
+			ULyraMarkerManagerComponent* MarkerComponent = ULyraMarkerManagerComponent::GetComponent(PlayerController);
+			if (MarkerComponent)
+			{
+				LocalPlayerMarkerInstance = MarkerComponent->GetMarkerInstance(PlayerController->GetPlayerState<APlayerState>());
+			}
+		}
+	}
+
+	if (LocalPlayerMarkerInstance.IsValid() && LocalPlayerMarkerInstance->DescriptorObject.IsValid())
+	{
+		bSuccess = true;
+		return LocalPlayerMarkerInstance->MarkerId;
+	}
+	bSuccess = false;
+	return FGuid();
 }
 
 void ULyraGameplayAbility_Marker::ShowOrHideMarkerPrompt(const TSharedPtr<FLyraMarkerInstance>& Entry, bool bShow)
@@ -89,27 +115,31 @@ void ULyraGameplayAbility_Marker::ToggleMarkerPromptVisbility()
 		ULyraMarkerManagerComponent* MarkerComponent = ULyraMarkerManagerComponent::GetComponent(PlayerController);
 		if (MarkerComponent)
 		{
-			MarkerInstance = MarkerComponent->GetMarkerInstance();
-			if (MarkerInstance.IsValid() && MarkerInstance->DescriptorObject.IsValid())
+			if (!LocalPlayerMarkerInstance.IsValid() || !LocalPlayerMarkerInstance->DescriptorObject.IsValid())
+			{
+				LocalPlayerMarkerInstance = MarkerComponent->GetMarkerInstance(PlayerController->GetPlayerState<APlayerState>());
+			}
+
+			if (LocalPlayerMarkerInstance.IsValid() && LocalPlayerMarkerInstance->DescriptorObject.IsValid())
 			{
 				int32 ViewportX, ViewportY;
 				PlayerController->GetViewportSize(ViewportX, ViewportY);
 				FVector2D ScreenCenter(ViewportX * 0.5f, ViewportY * 0.5f);
 
 				FVector2D MarkerScreenPos;
-				PlayerController->ProjectWorldLocationToScreen(MarkerInstance->Location, MarkerScreenPos);
+				PlayerController->ProjectWorldLocationToScreen(LocalPlayerMarkerInstance->Location, MarkerScreenPos);
 				const float PixelDistance = FVector2D::Distance(MarkerScreenPos, ScreenCenter);
 
 				bool bShouldShowPrompt = PixelDistance <= CancelRadius;
-				bool bNewObject = LastDescriptorObject != MarkerInstance->DescriptorObject;
+				bool bNewObject = LastDescriptorObject != LocalPlayerMarkerInstance->DescriptorObject;
 
 				if ((bShouldShowPrompt != bLastPromptVisible) || bNewObject)
 				{
 					if (bNewObject)
 					{
-						LastDescriptorObject = MarkerInstance->DescriptorObject;
+						LastDescriptorObject = LocalPlayerMarkerInstance->DescriptorObject;
 					}
-					ShowOrHideMarkerPrompt(MarkerInstance, bShouldShowPrompt);
+					ShowOrHideMarkerPrompt(LocalPlayerMarkerInstance, bShouldShowPrompt);
 					bLastPromptVisible = bShouldShowPrompt;
 				}
 			}

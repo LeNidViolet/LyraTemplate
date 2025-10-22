@@ -7,8 +7,10 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "Interfaces/OnlineSessionInterface.h"
-#include "CommonSessionSubsystemOssv1.h"
 #include "AsyncAction_Helper.h"
+#include "AsyncAction_LogChannel.h"
+
+
 
 UAsyncAction_GetLobbyFullInfo* UAsyncAction_GetLobbyFullInfo::GetLobbyFullInfo(
 	UObject* WorldContextObject,
@@ -16,7 +18,7 @@ UAsyncAction_GetLobbyFullInfo* UAsyncAction_GetLobbyFullInfo::GetLobbyFullInfo(
 {
 	if (!Player || !WorldContextObject)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UAsyncAction_GetLobbyFullInfo::GetLobbyFullInfo: Invalid parameters"));
+		UE_LOG(LogCommonSessionAsyncAction, Error, TEXT("UAsyncAction_GetLobbyFullInfo::GetLobbyFullInfo: Invalid parameters"));
 		return nullptr;
 	}
 
@@ -40,10 +42,7 @@ void UAsyncAction_GetLobbyFullInfo::Execute_GetLobbyFullInfo()
 	{
 		if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
 		{
-			UCommonSessionSubsystemOssv1* SessionSubsystem = UGameInstance::GetSubsystem<UCommonSessionSubsystemOssv1>(WorldContextObject->GetWorld()->GetGameInstance());
-			check(SessionSubsystem);
-
-			FNamedOnlineSession* NamedSession = SessionPtr->GetNamedSession(SessionSubsystem->GetLobbyName());
+			FNamedOnlineSession* NamedSession = SessionPtr->GetNamedSession(NAME_GameSession);
 			if (NamedSession)
 			{
 				Result.LobbyId = NamedSession->GetSessionIdStr();

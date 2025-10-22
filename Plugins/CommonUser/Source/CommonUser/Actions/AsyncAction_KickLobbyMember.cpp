@@ -5,8 +5,8 @@
 
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
-#include "CommonSessionSubsystemOssv1.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "AsyncAction_LogChannel.h"
 
 
 
@@ -17,7 +17,7 @@ UAsyncAction_KickLobbyMember* UAsyncAction_KickLobbyMember::KickLobbyMember(
 {
 	if (!Player || !WorldContextObject || !TargetUserUniqueId.IsValid())
 	{
-		UE_LOG(LogTemp, Error, TEXT("UAsyncAction_KickLobbyMember::KickLobbyMember: Invalid parameters"));
+		UE_LOG(LogCommonSessionAsyncAction, Error, TEXT("UAsyncAction_KickLobbyMember::KickLobbyMember: Invalid parameters"));
 		return nullptr;
 	}
 
@@ -41,12 +41,9 @@ void UAsyncAction_KickLobbyMember::Execute_KickLobbyMember()
 	{
 		if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
 		{
-			UCommonSessionSubsystemOssv1* SessionSubsystem = UGameInstance::GetSubsystem<UCommonSessionSubsystemOssv1>(WorldContextObject->GetWorld()->GetGameInstance());
-			check(SessionSubsystem);
-
 			SessionPtr->RemovePlayerFromSession(
 				Player->GetLocalPlayer()->GetLocalPlayerIndex(),
-				SessionSubsystem->GetLobbyName(),
+				NAME_GameSession,
 				*TargetUserUniqueId.GetUniqueNetId()
 				);
 		}

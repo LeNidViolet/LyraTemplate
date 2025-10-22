@@ -9,21 +9,7 @@
 #include "LyraUINaviSubsystem.generated.h"
 
 
-USTRUCT(BlueprintType)
-struct FLyraUINaviFocus
-{
-	GENERATED_BODY()
-
-public:
-	/** The Widget to be Focus **/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="UI Navi")
-	TObjectPtr<UUserWidget> WidgetToFocus;
-
-	/** Widget identify **/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="UI Navi")
-	FString WidgetId;
-};
-
+struct FOnUINaviFocusParameters;
 
 UCLASS(MinimalAPI)
 class ULyraUINaviSubsystem : public ULocalPlayerSubsystem
@@ -39,7 +25,7 @@ protected:
 	virtual void Deinitialize() override;
 
 	FGameplayMessageListenerHandle UINaviFocusEventListener;
-	void HandleUINaviFocusEvent(FGameplayTag Channel, const FLyraUINaviFocus& Payload);
+	void HandleUINaviFocusEvent(FGameplayTag Channel, const FOnUINaviFocusParameters& Parameters);
 
 	FString CurrentFocusedWidgetId;
 };

@@ -78,7 +78,6 @@ struct FEIKAttribute
 			VariantData.GetValue(IntValue);
 			break;
 		default:
-			UE_LOG(LogTemp, Warning, TEXT("FEIKAttribute: Unsupported VariantData type (%d)"), (int32)VariantData.GetType());
 			AttributeType = EEIKAttributeType::String;
 			StringValue = TEXT("Unsupported VariantData type");
 			break;

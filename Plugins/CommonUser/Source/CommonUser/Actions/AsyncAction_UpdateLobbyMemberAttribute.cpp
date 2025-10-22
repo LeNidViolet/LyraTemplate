@@ -6,7 +6,7 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "AsyncAction_Helper.h"
-#include "CommonSessionSubsystemOssv1.h"
+#include "AsyncAction_LogChannel.h"
 
 
 UAsyncAction_UpdateLobbyMemberAttribute* UAsyncAction_UpdateLobbyMemberAttribute::UpdateLobbyMemberAttribute(
@@ -14,7 +14,7 @@ UAsyncAction_UpdateLobbyMemberAttribute* UAsyncAction_UpdateLobbyMemberAttribute
 {
 	if (!WorldContextObject || !Player || MemberSettings.Num() == 0)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UAsyncAction_UpdateLobbyMemberAttribute::UpdateLobbyMemberAttribute: Invalid parameters"));
+		UE_LOG(LogCommonSessionAsyncAction, Error, TEXT("UAsyncAction_UpdateLobbyMemberAttribute::UpdateLobbyMemberAttribute: Invalid parameters"));
 		return nullptr;
 	}
 
@@ -39,19 +39,16 @@ void UAsyncAction_UpdateLobbyMemberAttribute::Execute_UpdateLobbyMemberAttribute
 	{
 		if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
 		{
-			UCommonSessionSubsystemOssv1* SessionSubsystem = UGameInstance::GetSubsystem<UCommonSessionSubsystemOssv1>(WorldContextObject->GetWorld()->GetGameInstance());
-			check(SessionSubsystem);
-
 			if (MemberSettings.Num() > 0)
 			{
 				bool bOk = AsyncAction_Helper::UpdateMemberAttributes(
 					WorldContextObject.Get(),
 					Player->GetLocalPlayer()->GetLocalPlayerIndex(),
-					SessionSubsystem->GetLobbyName(),
+					NAME_GameSession,
 					MemberSettings);
 				if (!bOk)
 				{
-					UE_LOG(LogTemp, Error, TEXT("UAsyncAction_CreateLobby::OnCreateLobbyCompleted: Failed to update member attributes"));
+					UE_LOG(LogCommonSessionAsyncAction, Warning, TEXT("UAsyncAction_CreateLobby::OnCreateLobbyCompleted: Failed to update member attributes"));
 				}
 				else
 				{

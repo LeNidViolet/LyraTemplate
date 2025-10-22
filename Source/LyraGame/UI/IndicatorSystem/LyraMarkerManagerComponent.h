@@ -10,27 +10,8 @@
 
 #define UE_API LYRAGAME_API
 
-USTRUCT(BlueprintType)
-struct FLyraMessageMarkerToggle
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Marker")
-	bool bAddMarker = true;
-
-	// used for add
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Marker")
-	FVector Location = FVector::ZeroVector;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Marker")
-	TObjectPtr<AActor> Actor;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Marker")
-	TSubclassOf<UIndicatorDescriptor> DescriptorClass;
-
-	// used for remove
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Marker")
-	TObjectPtr<UIndicatorDescriptor> DescriptorObject;
-};
-
+struct FOnPlaceMarkerParameters;
+struct FOnRemoveMarkerParameters;
 
 
 USTRUCT()
@@ -41,7 +22,9 @@ struct FLyraMarkerInstance
 	UPROPERTY()
 	FVector Location = FVector::ZeroVector;
 	UPROPERTY()
-	TSubclassOf<UIndicatorDescriptor> DescriptorClass;
+	FGuid MarkerId;
+	UPROPERTY()
+	TObjectPtr<APlayerState> PlayerState;
 	UPROPERTY()
 	TWeakObjectPtr<UIndicatorDescriptor> DescriptorObject;
 };
@@ -59,7 +42,7 @@ public:
 
 	static UE_API ULyraMarkerManagerComponent* GetComponent(AController* Controller);
 
-	UE_API TSharedPtr<FLyraMarkerInstance> GetMarkerInstance();
+	UE_API TSharedPtr<FLyraMarkerInstance> GetMarkerInstance(APlayerState* PlayerState);
 
 protected:
 	// Called when the game starts
@@ -67,21 +50,29 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	// Returns the distance, in meters.
-	UFUNCTION(BlueprintCallable, Category="MarkerInfo")
+	UFUNCTION(BlueprintCallable, Category="Marker")
 	int32 GetDistanceToLocation(UIndicatorDescriptor* DescriptorObject, const FVector& TargetLocation);
+
+
+	UFUNCTION(BlueprintCallable, Category="Marker")
+	FGuid GetMarkerId(UIndicatorDescriptor* DescriptorObject);
+
+	UFUNCTION(BlueprintCallable, Category="Marker")
+	APlayerState* GetMarkerPlayerState(UIndicatorDescriptor* DescriptorObject);
 
 private:
 	bool Initialize();
 	void Deinitialize();
 
-	FGameplayMessageListenerHandle MarkerToggleEventListener;
-	void HandleMarkerToggleEvent(FGameplayTag Channel, const FLyraMessageMarkerToggle& Payload);
+	FGameplayMessageListenerHandle MarkerAddEventListener;
+	void HandlePlaceMarkerEvent(FGameplayTag Channel, const FOnPlaceMarkerParameters& Parameters);
+	FGameplayMessageListenerHandle MarkerRemoveEventListener;
+	void HandleRemoveMarkerEvent(FGameplayTag Channel, const FOnRemoveMarkerParameters& Parameters);
 
-	void HandleMarkerAdd(const FLyraMessageMarkerToggle& Payload);
-	void HandleMarkerRemove(const FLyraMessageMarkerToggle& Payload);
-	void RemoveExistingMarker();
+	UPROPERTY(EditDefaultsOnly, Category="Marker")
+	TSubclassOf<UIndicatorDescriptor> DescriptorClass;
 
-	TSharedPtr<FLyraMarkerInstance> MarkerInstance;
+	TArray<TSharedPtr<FLyraMarkerInstance>> MarkerList;
 };
 
 #undef UE_API

@@ -10,10 +10,12 @@
 
 bool FIndicatorProjection::Project(const UIndicatorDescriptor& IndicatorDescriptor, const FSceneViewProjectionData& InProjectionData, const FVector2f& ScreenSize, FVector& OutScreenPositionWithDepth)
 {
-	if (USceneComponent* Component = IndicatorDescriptor.GetSceneComponent())
-	{
-		const EActorCanvasProjectionMode ProjectionMode = IndicatorDescriptor.GetProjectionMode();
+	const USceneComponent* Component = IndicatorDescriptor.GetSceneComponent();
+	const AActor* Actor = IndicatorDescriptor.GetActor();
+	const EActorCanvasProjectionMode ProjectionMode = IndicatorDescriptor.GetProjectionMode();
 
+	if ((Component && ProjectionMode != EActorCanvasProjectionMode::WorldPoint) || (Actor || ProjectionMode == EActorCanvasProjectionMode::WorldPoint))
+	{
 		TOptional<FVector> WorldLocation;
 		if (ProjectionMode != EActorCanvasProjectionMode::WorldPoint)
 		{

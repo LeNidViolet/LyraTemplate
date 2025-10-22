@@ -8,6 +8,7 @@
 #include "LyraLogChannels.h"
 #include "Components/MeshComponent.h"
 #include "GameModes/LyraUserFacingExperienceDefinition.h"
+#include "Kismet/GameplayStatics.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(LyraSystemStatics)
 
@@ -108,5 +109,94 @@ TArray<UActorComponent*> ULyraSystemStatics::FindComponentsByClass(AActor* Targe
 
 	}
 	return MoveTemp(Components);
+}
+
+bool ULyraSystemStatics::TravelExperience(
+	const UObject* WorldContextObject,
+	ULyraUserFacingExperienceDefinition* FacingExperience,
+	TMap<FString, FString> ExtraArgs, bool bAbsolute, ECommonSessionOnlineMode OnlineMode)
+{
+	UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
+	if (World == nullptr)
+	{
+		return false;
+	}
+
+	FAssetData MapAssetData;
+	bool bOK = UAssetManager::Get().GetPrimaryAssetData(FacingExperience->MapID, MapAssetData);
+	check(bOK);
+
+	FString TravelURL = MapAssetData.PackageName.ToString();
+	switch (OnlineMode)
+	{
+	case ECommonSessionOnlineMode::Offline:
+		break;
+	case ECommonSessionOnlineMode::Online:
+		TravelURL += TEXT("?listen");
+		break;
+	case ECommonSessionOnlineMode::LAN:
+		TravelURL += TEXT("?bIsLanMatch?listen");
+		break;
+	}
+
+	for (const auto& Kvp : ExtraArgs)
+	{
+		if (!Kvp.Key.IsEmpty())
+		{
+			if (Kvp.Value.IsEmpty())
+			{
+				TravelURL += FString::Printf(TEXT("?%s"), *Kvp.Key);
+			}
+			else
+			{
+				TravelURL += FString::Printf(TEXT("?%s=%s"), *Kvp.Key, *Kvp.Value);
+			}
+		}
+	}
+
+	for (const auto& Kvp : FacingExperience->ExtraArgs)
+	{
+		if (!Kvp.Key.IsEmpty())
+		{
+			if (Kvp.Value.IsEmpty())
+			{
+				TravelURL += FString::Printf(TEXT("?%s"), *Kvp.Key);
+			}
+			else
+			{
+				TravelURL += FString::Printf(TEXT("?%s=%s"), *Kvp.Key, *Kvp.Value);
+			}
+		}
+	}
+
+	bool bExists = UGameplayStatics::HasOption(TravelURL, "Experience");
+	if (!bExists)
+	{
+		FName ExperienceName = FacingExperience->ExperienceID.PrimaryAssetName;
+		TravelURL += FString::Printf(TEXT("?Experience=%s"), *ExperienceName.ToString());
+	}
+
+	UE_LOG(LogLyra, Log, TEXT("Traveling to experience via URL %s"), *TravelURL);
+	return World->ServerTravel(TravelURL, bAbsolute);
+}
+
+bool ULyraSystemStatics::TravelExperienceWithName(
+	const UObject* WorldContextObject,
+	FName FacingExperience, TMap<FString, FString> ExtraArgs,
+	bool bAbsolute, ECommonSessionOnlineMode OnlineMode)
+{
+	UAssetManager* AssetManager = UAssetManager::GetIfInitialized();
+	ensure(AssetManager);
+	FPrimaryAssetId AssetId(TEXT("LyraUserFacingExperienceDefinition"), FacingExperience);
+	FSoftObjectPath AssetPath = AssetManager->GetPrimaryAssetPath(AssetId);
+	if (AssetPath.IsValid())
+	{
+		UObject* Asset = AssetManager->GetStreamableManager().LoadSynchronous(AssetPath, true);
+		if (ULyraUserFacingExperienceDefinition* FacingExperienceObject = Cast<ULyraUserFacingExperienceDefinition>(Asset))
+		{
+			return TravelExperience(WorldContextObject, FacingExperienceObject, ExtraArgs, bAbsolute, OnlineMode);
+		}
+	}
+	return false;
 }
 

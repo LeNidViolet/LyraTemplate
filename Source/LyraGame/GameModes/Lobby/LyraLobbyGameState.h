@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameModes/LyraGameState.h"
-#include "LobbyGameState.generated.h"
+#include "LyraLobbyGameState.generated.h"
 
 #define UE_API LYRAGAME_API
 
@@ -12,7 +12,7 @@
  *
  */
 UCLASS(MinimalAPI)
-class ALobbyGameState : public ALyraGameState
+class ALyraLobbyGameState : public ALyraGameState
 {
 	GENERATED_BODY()
 

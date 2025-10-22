@@ -1,19 +1,19 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "LobbyGameState.h"
+#include "LyraLobbyGameState.h"
 
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "NativeGameplayTags.h"
+#include "LyraGameplayTags.h"
 #include "UI/Misc/LyraToastMessage.h"
 
 
-UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Toast_Message_Lobby_MemberEvent, "ToastMessage.Lobby.MemberEvent")
-UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Toast_Message_Lobby_Countdown, "ToastMessage.Lobby.Countdown")
 
 
 
-void ALobbyGameState::Multicast_BroadcastMessage_Implementation(const FString& Message)
+
+void ALyraLobbyGameState::Multicast_BroadcastMessage_Implementation(const FString& Message)
 {
 	if (GetNetMode() == NM_DedicatedServer)
 	{
@@ -26,7 +26,7 @@ void ALobbyGameState::Multicast_BroadcastMessage_Implementation(const FString& M
 		message.StringValue = Message;
 
 		UGameplayMessageSubsystem::Get(this).BroadcastMessage(
-			TAG_Toast_Message_Lobby_MemberEvent,
+			LyraGameplayTags::ToastMessage_Lobby_MemberEvent,
 			message
 			);
 	}
@@ -38,7 +38,7 @@ void ALobbyGameState::Multicast_BroadcastMessage_Implementation(const FString& M
 // 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 // }
 
-void ALobbyGameState::Multicast_BroadcastCountdown_Implementation(int32 CountdownValue)
+void ALyraLobbyGameState::Multicast_BroadcastCountdown_Implementation(int32 CountdownValue)
 {
 	if (GetNetMode() == NM_DedicatedServer)
 	{
@@ -51,7 +51,7 @@ void ALobbyGameState::Multicast_BroadcastCountdown_Implementation(int32 Countdow
 		message.NumberValue = CountdownValue;
 
 		UGameplayMessageSubsystem::Get(this).BroadcastMessage(
-			TAG_Toast_Message_Lobby_Countdown,
+			LyraGameplayTags::ToastMessage_Lobby_Countdown,
 			message
 			);
 	}

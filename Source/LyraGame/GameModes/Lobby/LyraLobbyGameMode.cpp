@@ -1,21 +1,28 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "LobbyGameMode.h"
+#include "LyraLobbyGameMode.h"
 
-#include "LobbyGameState.h"
-#include "LobbyPlayerState.h"
+#include "LyraLobbyGameState.h"
+#include "LyraLobbyPlayerState.h"
+#include "System/LyraSystemStatics.h"
 
 
+ALyraLobbyGameMode::ALyraLobbyGameMode(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	GameStateClass = ALyraLobbyGameState::StaticClass();
+	PlayerStateClass = ALyraLobbyPlayerState::StaticClass();
+}
 
-void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
+void ALyraLobbyGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
-	ALobbyPlayerState* PlayerState = NewPlayer->GetPlayerState<ALobbyPlayerState>();
+	ALyraLobbyPlayerState* PlayerState = NewPlayer->GetPlayerState<ALyraLobbyPlayerState>();
 	check(PlayerState != nullptr);
 
-	ALobbyGameState* GameState = GetGameState<ALobbyGameState>();
+	ALyraLobbyGameState* GameState = GetGameState<ALyraLobbyGameState>();
 	check(GameState != nullptr);
 
 	FString Message = FString::Printf(TEXT("%s joined the lobby"), *PlayerState->GetName());
@@ -31,12 +38,12 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 	}
 }
 
-void ALobbyGameMode::Logout(AController* Exiting)
+void ALyraLobbyGameMode::Logout(AController* Exiting)
 {
-	ALobbyPlayerState* PlayerState = Exiting->GetPlayerState<ALobbyPlayerState>();
+	ALyraLobbyPlayerState* PlayerState = Exiting->GetPlayerState<ALyraLobbyPlayerState>();
 	check(PlayerState != nullptr);
 
-	ALobbyGameState* GameState = GetGameState<ALobbyGameState>();
+	ALyraLobbyGameState* GameState = GetGameState<ALyraLobbyGameState>();
 	check(GameState != nullptr);
 
 	FString Message = FString::Printf(TEXT("%s left the lobby"), *PlayerState->GetName());
@@ -61,33 +68,28 @@ void ALobbyGameMode::Logout(AController* Exiting)
 	}
 }
 
-void ALobbyGameMode::OnPlayerReadyStateChanged(ALobbyPlayerState* PlayerState)
+void ALyraLobbyGameMode::OnPlayerReadyStateChanged(ALyraLobbyPlayerState* PlayerState)
 {
 	FString Message = FString::Printf(
 		TEXT("%s %s"),
 		*PlayerState->GetName(),
 		PlayerState->IsReady() ? *FString(TEXT("Ready")) : *FString(TEXT("Not Ready")));
-	ALobbyGameState* GameState = GetGameState<ALobbyGameState>();
+	ALyraLobbyGameState* GameState = GetGameState<ALyraLobbyGameState>();
 	check(GameState != nullptr);
 	GameState->Multicast_BroadcastMessage(Message);
 
 	RefreshLobbyCountdown();
 }
 
-void ALobbyGameMode::RefreshLobbyCountdown()
+void ALyraLobbyGameMode::RefreshLobbyCountdown()
 {
-	ALobbyGameState* GameState = GetGameState<ALobbyGameState>();
+	ALyraLobbyGameState* GameState = GetGameState<ALyraLobbyGameState>();
 	if (!GameState) return;
 
-	UE_LOG(LogTemp, Display, TEXT("Refreshing Lobby countdown, PlayerState[%d] DelegateMap[%d]"),
-		GameState->PlayerArray.Num(),
-		DelegateMap.Num()
-		);
-
 	int32 PlayerCountInReadyState = 0;
-	for (TPair<ALobbyPlayerState*, FDelegateHandle>& Pair : DelegateMap)
+	for (TPair<ALyraLobbyPlayerState*, FDelegateHandle>& Pair : DelegateMap)
 	{
-		ALobbyPlayerState* LobbyPS = Pair.Key;
+		ALyraLobbyPlayerState* LobbyPS = Pair.Key;
 		if (LobbyPS && LobbyPS->IsReady())
 		{
 			PlayerCountInReadyState++;
@@ -139,7 +141,7 @@ void ALobbyGameMode::RefreshLobbyCountdown()
 	}
 }
 
-void ALobbyGameMode::StartCountdownTimer()
+void ALyraLobbyGameMode::StartCountdownTimer()
 {
 	if (!TimerHandle.IsValid())
 	{
@@ -152,7 +154,7 @@ void ALobbyGameMode::StartCountdownTimer()
 		FTimerManager& TimerManager = World->GetTimerManager();
 
 		FTimerDelegate TimerDelegate;
-		TimerDelegate.BindUObject(this, &ALobbyGameMode::TimerExpiredFunction);
+		TimerDelegate.BindUObject(this, &ALyraLobbyGameMode::TimerExpiredFunction);
 
 		float DelayTime = 1.0f;
 		bool bLooping = true;
@@ -166,7 +168,7 @@ void ALobbyGameMode::StartCountdownTimer()
 	}
 }
 
-void ALobbyGameMode::StopCountdownTimer()
+void ALyraLobbyGameMode::StopCountdownTimer()
 {
 	if (TimerHandle.IsValid())
 	{
@@ -182,9 +184,9 @@ void ALobbyGameMode::StopCountdownTimer()
 	}
 }
 
-void ALobbyGameMode::TimerExpiredFunction()
+void ALyraLobbyGameMode::TimerExpiredFunction()
 {
-	ALobbyGameState* GameState = GetGameState<ALobbyGameState>();
+	ALyraLobbyGameState* GameState = GetGameState<ALyraLobbyGameState>();
 	if (!GameState)
 	{
 		StopCountdownTimer();
@@ -200,7 +202,8 @@ void ALobbyGameMode::TimerExpiredFunction()
 		if (FacingExperience.IsValid())
 		{
 			// Travel Server
-			TravelExperience(
+			ULyraSystemStatics::TravelExperience(
+				this,
 				FacingExperience.Get(),
 				TMap<FString, FString>(),
 				true,
@@ -209,7 +212,8 @@ void ALobbyGameMode::TimerExpiredFunction()
 		}
 		else if (!FacingExperienceName.IsNone())
 		{
-			TravelExperienceWithName(
+			ULyraSystemStatics::TravelExperienceWithName(
+				this,
 				FacingExperienceName,
 				TMap<FString, FString>(),
 				true,

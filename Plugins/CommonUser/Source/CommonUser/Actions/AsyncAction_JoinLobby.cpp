@@ -8,7 +8,8 @@
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystemUtils.h"
 #include "Interfaces/OnlineSessionInterface.h"
-#include "CommonSessionSubsystemOssv1.h"
+#include "AsyncAction_LogChannel.h"
+
 
 
 UAsyncAction_JoinLobby* UAsyncAction_JoinLobby::JoinLobby(
@@ -19,7 +20,7 @@ UAsyncAction_JoinLobby* UAsyncAction_JoinLobby::JoinLobby(
 {
 	if (!Player || !WorldContextObject || LobbyId.IsEmpty())
 	{
-		UE_LOG(LogTemp, Error, TEXT("UAsyncAction_JoinLobby::JoinLobby: Invalid parameters"));
+		UE_LOG(LogCommonSessionAsyncAction, Error, TEXT("UAsyncAction_JoinLobby::JoinLobby: Invalid parameters"));
 		return nullptr;
 	}
 
@@ -87,11 +88,8 @@ void UAsyncAction_JoinLobby::OnSingleSessionResultComplete(int32 LocalUserNum, b
 		const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld());
 		const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
 
-		UCommonSessionSubsystemOssv1* SessionSubsystem = UGameInstance::GetSubsystem<UCommonSessionSubsystemOssv1>(WorldContextObject->GetWorld()->GetGameInstance());
-		check(SessionSubsystem);
-
 		JoinLobbyDelegateHandle = SessionPtr->OnJoinSessionCompleteDelegates.AddUObject(this, &ThisClass::OnJoinSessionComplete);
-		SessionPtr->JoinSession(LocalUserNum, SessionSubsystem->GetLobbyName(), SearchResult);
+		SessionPtr->JoinSession(LocalUserNum, NAME_GameSession, SearchResult);
 
 		return ;
 	}
@@ -117,7 +115,7 @@ void UAsyncAction_JoinLobby::OnJoinSessionComplete(FName SessionName, EOnJoinSes
 				MemberSettings);
 			if (!bOk)
 			{
-				UE_LOG(LogTemp, Error, TEXT("UAsyncAction_CreateLobby::OnCreateLobbyCompleted: Failed to update member attributes"));
+				UE_LOG(LogCommonSessionAsyncAction, Warning, TEXT("UAsyncAction_CreateLobby::OnCreateLobbyCompleted: Failed to update member attributes"));
 			}
 		}
 

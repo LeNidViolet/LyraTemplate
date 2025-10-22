@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CommonSessionSubsystem.h"
-#include "LyraUserFacingExperienceDefinition.h"
 #include "ModularGameMode.h"
 
 #include "LyraGameMode.generated.h"
@@ -66,22 +65,6 @@ public:
 	// - If bForceReset is true, the controller will be reset this frame (abandoning the currently possessed pawn, if any)
 	UFUNCTION(BlueprintCallable)
 	UE_API void RequestPlayerRestartNextFrame(AController* Controller, bool bForceReset = false);
-
-	UFUNCTION(BlueprintCallable, Category = "Lyra|Experience")
-	UE_API bool TravelExperience(
-		ULyraUserFacingExperienceDefinition* FacingExperience,
-		TMap<FString, FString> ExtraArgs,
-		bool bAbsolute = true,
-		ECommonSessionOnlineMode OnlineMode=ECommonSessionOnlineMode::Offline
-		);
-
-	UFUNCTION(BlueprintCallable, Category = "Lyra|Experience")
-	UE_API bool TravelExperienceWithName(
-		FName FacingExperience,
-		TMap<FString, FString> ExtraArgs,
-		bool bAbsolute = true,
-		ECommonSessionOnlineMode OnlineMode=ECommonSessionOnlineMode::Offline
-		);
 
 	// Agnostic version of PlayerCanRestart that can be used for both player bots and players
 	UE_API virtual bool ControllerCanRestart(AController* Controller);

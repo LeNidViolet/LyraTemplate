@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystem/Abilities/LyraGameplayAbility.h"
-#include "UI/IndicatorSystem/LyraMarkerManagerComponent.h"
 #include "LyraGameplayAbility_Marker.generated.h"
 
 #define UE_API LYRAGAME_API
+
+struct FLyraMarkerInstance;
+class UIndicatorDescriptor;
 
 /**
  *
@@ -43,12 +45,15 @@ protected:
 	UFUNCTION(BlueprintCallable, Category="Marker")
 	UIndicatorDescriptor* GetAimingMarker() const;
 
+	UFUNCTION(BlueprintCallable, Category="Marker")
+	FGuid GetLocalPlayerMarkerId(bool& bSuccess);
+
 private:
 
 	void ShowOrHideMarkerPrompt(const TSharedPtr<FLyraMarkerInstance>& Entry, bool bShow);
 
 
-	TSharedPtr<FLyraMarkerInstance> MarkerInstance;
+	TSharedPtr<FLyraMarkerInstance> LocalPlayerMarkerInstance;
 	bool bLastPromptVisible = false;
 	TWeakObjectPtr<UIndicatorDescriptor> LastDescriptorObject;
 };

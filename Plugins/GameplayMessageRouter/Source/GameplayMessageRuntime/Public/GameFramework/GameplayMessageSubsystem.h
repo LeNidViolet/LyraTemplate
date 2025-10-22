@@ -4,6 +4,7 @@
 
 #include "GameplayMessageTypes2.h"
 #include "GameplayTagContainer.h"
+#include "StructUtils/InstancedStruct.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "UObject/WeakObjectPtr.h"
 
@@ -118,6 +119,16 @@ public:
 	{
 		const UScriptStruct* StructType = TBaseStructure<FMessageStructType>::Get();
 		BroadcastMessageInternal(Channel, StructType, &Message);
+	}
+
+	void BroadcastMessage(FGameplayTag Channel, const FInstancedStruct& MessagePayload)
+	{
+		if (!MessagePayload.IsValid()) return;
+
+		const UScriptStruct* StructType = MessagePayload.GetScriptStruct();
+		const void* MessagePtr = MessagePayload.GetMemory();
+
+		BroadcastMessageInternal(Channel, StructType, MessagePtr);
 	}
 
 	/**

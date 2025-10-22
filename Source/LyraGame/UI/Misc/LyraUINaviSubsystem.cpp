@@ -4,10 +4,10 @@
 #include "LyraUINaviSubsystem.h"
 
 #include "NativeGameplayTags.h"
+#include "LyraGameplayTags.h"
+#include "Messages/LyraNotificationMessage_UINaviFocus.h"
 #include "Blueprint/UserWidget.h"
 
-
-UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_UI_Navi_Focus, TEXT("UI.Navi.Focus"))
 
 
 void ULyraUINaviSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -15,8 +15,8 @@ void ULyraUINaviSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 
 	UGameplayMessageSubsystem & MessageSubsystem = UGameplayMessageSubsystem::Get(this);
-	UINaviFocusEventListener = MessageSubsystem.RegisterListener<FLyraUINaviFocus>(
-		TAG_UI_Navi_Focus,
+	UINaviFocusEventListener = MessageSubsystem.RegisterListener<FOnUINaviFocusParameters>(
+		LyraGameplayTags::UI_Navi_Focus,
 		this,
 		&ThisClass::HandleUINaviFocusEvent
 	);
@@ -33,12 +33,12 @@ void ULyraUINaviSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
-void ULyraUINaviSubsystem::HandleUINaviFocusEvent(FGameplayTag Channel, const FLyraUINaviFocus& Payload)
+void ULyraUINaviSubsystem::HandleUINaviFocusEvent(FGameplayTag Channel, const FOnUINaviFocusParameters& Parameters)
 {
-	FString NewFocusedWidgetId = Payload.WidgetId;
+	FString NewFocusedWidgetId = Parameters.WidgetId;
 	if (NewFocusedWidgetId != CurrentFocusedWidgetId)
 	{
 		CurrentFocusedWidgetId = NewFocusedWidgetId;
-		Payload.WidgetToFocus.Get()->SetFocus();
+		Parameters.WidgetToFocus.Get()->SetFocus();
 	}
 }

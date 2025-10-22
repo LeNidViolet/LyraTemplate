@@ -4,7 +4,8 @@
 
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/SoftObjectPtr.h"
-
+#include "CommonSessionSubsystem.h"
+#include "GameModes/LyraUserFacingExperienceDefinition.h"
 #include "LyraSystemStatics.generated.h"
 
 template <typename T> class TSubclassOf;
@@ -46,4 +47,13 @@ public:
 	// Gets all the components that inherit from the given class
 	UFUNCTION(BlueprintCallable, Category = "Actor", meta=(DefaultToSelf="TargetActor", ComponentClass="/Script/Engine.ActorComponent", DeterminesOutputType="ComponentClass"))
 	static TArray<UActorComponent*> FindComponentsByClass(AActor* TargetActor, TSubclassOf<UActorComponent> ComponentClass, bool bIncludeChildActors = true);
+
+	// Transferred to the world represented by the FacingExperience object.
+	UFUNCTION(BlueprintCallable, Category = "Lyra|Experience", meta = (WorldContext = "WorldContextObject"))
+	static bool TravelExperience(const UObject* WorldContextObject, ULyraUserFacingExperienceDefinition* FacingExperience,	TMap<FString, FString> ExtraArgs, bool bAbsolute = true, ECommonSessionOnlineMode OnlineMode=ECommonSessionOnlineMode::Offline);
+
+	// Transferred to the world represented by the FacingExperience name.
+	UFUNCTION(BlueprintCallable, Category = "Lyra|Experience", meta = (WorldContext = "WorldContextObject"))
+	static bool TravelExperienceWithName(const UObject* WorldContextObject, FName FacingExperience, TMap<FString, FString> ExtraArgs, bool bAbsolute = true, ECommonSessionOnlineMode OnlineMode=ECommonSessionOnlineMode::Offline);
+
 };

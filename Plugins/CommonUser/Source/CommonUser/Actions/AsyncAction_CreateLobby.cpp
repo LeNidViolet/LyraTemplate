@@ -9,7 +9,7 @@
 #include "OnlineSubsystemUtils.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Online/OnlineSessionNames.h"
-#include "CommonSessionSubsystemOssv1.h"
+#include "AsyncAction_LogChannel.h"
 
 
 
@@ -22,7 +22,7 @@ UAsyncAction_CreateLobby* UAsyncAction_CreateLobby::CreateLobby(
 {
 	if (!Player || !WorldContextObject || NumberOfPublicConnections <= 0)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UAsyncAction_CreateLobby::CreateLobby: Invalid parameters"));
+		UE_LOG(LogCommonSessionAsyncAction, Error, TEXT("UAsyncAction_CreateLobby::CreateLobby: Invalid parameters"));
 		return nullptr;
 	}
 
@@ -79,11 +79,8 @@ void UAsyncAction_CreateLobby::Execute_CreateLobby()
 				FUniqueNetIdPtr UserId = LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
 				if (UserId.IsValid())
 				{
-					UCommonSessionSubsystemOssv1* SessionSubsystem = UGameInstance::GetSubsystem<UCommonSessionSubsystemOssv1>(WorldContextObject->GetWorld()->GetGameInstance());
-					check(SessionSubsystem);
-
 					CreateLobbyDelegateHandle = SessionPtr->OnCreateSessionCompleteDelegates.AddUObject(this, &ThisClass::OnCreateLobbyCompleted);
-					SessionPtr->CreateSession(*UserId, SessionSubsystem->GetLobbyName(), SessionCreationInfo);
+					SessionPtr->CreateSession(*UserId, NAME_GameSession, SessionCreationInfo);
 
 					return;
 				}
@@ -128,7 +125,7 @@ void UAsyncAction_CreateLobby::OnCreateLobbyCompleted(FName SessionName, bool bW
 					MemberSettings);
 				if (!bOk)
 				{
-					UE_LOG(LogTemp, Error, TEXT("UAsyncAction_CreateLobby::OnCreateLobbyCompleted: Failed to update member attributes"));
+					UE_LOG(LogCommonSessionAsyncAction, Warning, TEXT("UAsyncAction_CreateLobby::OnCreateLobbyCompleted: Failed to update member attributes"));
 				}
 			}
 

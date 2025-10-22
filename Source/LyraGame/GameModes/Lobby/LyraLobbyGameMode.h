@@ -3,24 +3,26 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "LobbyPlayerState.h"
+#include "LyraLobbyPlayerState.h"
 #include "GameModes/LyraGameMode.h"
 #include "GameModes/LyraUserFacingExperienceDefinition.h"
-#include "LobbyGameMode.generated.h"
+#include "LyraLobbyGameMode.generated.h"
 
 
 #define UE_API LYRAGAME_API
 
 
 UCLASS(MinimalAPI)
-class ALobbyGameMode : public ALyraGameMode
+class ALyraLobbyGameMode : public ALyraGameMode
 {
 	GENERATED_BODY()
 
 public:
+	UE_API ALyraLobbyGameMode(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
-	virtual void PostLogin(APlayerController* NewPlayer) override;
-	virtual void Logout(AController* Exiting) override;
+
+	UE_API virtual void PostLogin(APlayerController* NewPlayer) override;
+	UE_API virtual void Logout(AController* Exiting) override;
 
 
 protected:
@@ -37,9 +39,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Lobby Game Mode")
 	FName FacingExperienceName;
 
-	TMap<ALobbyPlayerState*, FDelegateHandle> DelegateMap;
+	TMap<ALyraLobbyPlayerState*, FDelegateHandle> DelegateMap;
 
-	void OnPlayerReadyStateChanged(ALobbyPlayerState* PlayerState);
+	void OnPlayerReadyStateChanged(ALyraLobbyPlayerState* PlayerState);
 
 	int32 CurrentCountdownValue = 0;
 	bool bCountdownStarted = false;

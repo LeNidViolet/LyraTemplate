@@ -5,10 +5,12 @@
 
 #include "LyraIndicatorManagerComponent.h"
 #include "NativeGameplayTags.h"
+#include "LyraGameplayTags.h"
+#include "Messages/LyraNotificationMessage_Marker.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
+#include "GameFramework/PlayerState.h"
 #include "Player/LyraPlayerController.h"
 
-UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Message_Marker_Toggle, TEXT("Gameplay.Message.Marker.Toggle"))
 
 
 // Sets default values for this component's properties
@@ -32,11 +34,17 @@ ULyraMarkerManagerComponent* ULyraMarkerManagerComponent::GetComponent(AControll
 	return nullptr;
 }
 
-TSharedPtr<FLyraMarkerInstance> ULyraMarkerManagerComponent::GetMarkerInstance()
+TSharedPtr<FLyraMarkerInstance> ULyraMarkerManagerComponent::GetMarkerInstance(APlayerState* PlayerState)
 {
-	return MarkerInstance;
+	for (TSharedPtr<FLyraMarkerInstance>& MarkerInstance : MarkerList)
+	{
+		if (MarkerInstance->PlayerState == PlayerState)
+		{
+			return MarkerInstance;
+		}
+	}
+	return nullptr;
 }
-
 
 // Called when the game starts
 void ULyraMarkerManagerComponent::BeginPlay()
@@ -77,14 +85,42 @@ int32 ULyraMarkerManagerComponent::GetDistanceToLocation(UIndicatorDescriptor* D
 {
 	int32 Distance = -1;
 
-	if (MarkerInstance.IsValid() &&
-		MarkerInstance->DescriptorObject.IsValid() &&
-		MarkerInstance->DescriptorObject == DescriptorObject)
+	for (TSharedPtr<FLyraMarkerInstance>& MarkerInstance : MarkerList)
 	{
-		Distance = FMath::RoundToInt(FVector::Dist(TargetLocation, MarkerInstance->Location) / 100.0f);
+		if (MarkerInstance->DescriptorObject.IsValid() && MarkerInstance->DescriptorObject == DescriptorObject)
+		{
+			Distance = FMath::RoundToInt(FVector::Dist(TargetLocation, MarkerInstance->Location) / 100.0f);
+			break;
+		}
 	}
 
 	return Distance;
+}
+
+FGuid ULyraMarkerManagerComponent::GetMarkerId(UIndicatorDescriptor* DescriptorObject)
+{
+	for (TSharedPtr<FLyraMarkerInstance>& MarkerInstance : MarkerList)
+	{
+		if (MarkerInstance->DescriptorObject.IsValid() && MarkerInstance->DescriptorObject == DescriptorObject)
+		{
+			return MarkerInstance->MarkerId;
+		}
+	}
+
+	return FGuid();
+}
+
+APlayerState* ULyraMarkerManagerComponent::GetMarkerPlayerState(UIndicatorDescriptor* DescriptorObject)
+{
+	for (TSharedPtr<FLyraMarkerInstance>& MarkerInstance : MarkerList)
+	{
+		if (MarkerInstance->DescriptorObject.IsValid() && MarkerInstance->DescriptorObject == DescriptorObject)
+		{
+			return MarkerInstance->PlayerState.Get();
+		}
+	}
+
+	return nullptr;
 }
 
 bool ULyraMarkerManagerComponent::Initialize()
@@ -96,14 +132,17 @@ bool ULyraMarkerManagerComponent::Initialize()
 		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
 		if (MessageSubsystem)
 		{
-			MarkerToggleEventListener = MessageSubsystem->RegisterListener<FLyraMessageMarkerToggle>(
-				TAG_Message_Marker_Toggle,
+			MarkerAddEventListener = MessageSubsystem->RegisterListener<FOnPlaceMarkerParameters>(
+				LyraGameplayTags::Gameplay_Message_Marker_Add,
 				this,
-				&ThisClass::HandleMarkerToggleEvent);
+				&ThisClass::HandlePlaceMarkerEvent);
+
+			MarkerRemoveEventListener = MessageSubsystem->RegisterListener<FOnRemoveMarkerParameters>(
+				LyraGameplayTags::Gameplay_Message_Marker_Remove,
+				this,
+				&ThisClass::HandleRemoveMarkerEvent);
 
 			Result = true;
-
-			MarkerInstance = MakeShared<FLyraMarkerInstance>();
 		}
 	}
 
@@ -118,68 +157,61 @@ void ULyraMarkerManagerComponent::Deinitialize()
 		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
 		if (MessageSubsystem)
 		{
-			if (MarkerToggleEventListener.IsValid())
+			if (MarkerAddEventListener.IsValid())
 			{
-				MessageSubsystem->UnregisterListener(MarkerToggleEventListener);
+				MessageSubsystem->UnregisterListener(MarkerAddEventListener);
+			}
+			if (MarkerRemoveEventListener.IsValid())
+			{
+				MessageSubsystem->UnregisterListener(MarkerRemoveEventListener);
 			}
 		}
 	}
-
-	RemoveExistingMarker();
 }
 
-void ULyraMarkerManagerComponent::HandleMarkerToggleEvent(FGameplayTag Channel, const FLyraMessageMarkerToggle& Payload)
+void ULyraMarkerManagerComponent::HandlePlaceMarkerEvent(FGameplayTag Channel, const FOnPlaceMarkerParameters& Parameters)
 {
-	if (Payload.bAddMarker) HandleMarkerAdd(Payload);
-	else HandleMarkerRemove(Payload);
-}
-
-void ULyraMarkerManagerComponent::HandleMarkerAdd(const FLyraMessageMarkerToggle& Payload)
-{
-	if (Payload.Actor != nullptr && Payload.Actor->GetRootComponent())
+	if (Parameters.PlayerState && DescriptorClass)
 	{
 		// The rest of the settings are coming from the **CDO**.
-		UIndicatorDescriptor* Descriptor = NewObject<UIndicatorDescriptor>(this, Payload.DescriptorClass);
-		Descriptor->SetSceneComponent(Payload.Actor->GetRootComponent());
-		Descriptor->SetWorldPosition(Payload.Location);
-		Descriptor->SetDataObject(Payload.Actor.Get());
+		UIndicatorDescriptor* Descriptor = NewObject<UIndicatorDescriptor>(this, DescriptorClass);
+		Descriptor->SetActor(Parameters.PlayerState.Get());
+		Descriptor->SetWorldPosition(Parameters.Location);
 
-		RemoveExistingMarker();
-		MarkerInstance->Location = Payload.Location;
-		MarkerInstance->DescriptorClass = Payload.DescriptorClass;
+		TSharedPtr<FLyraMarkerInstance> MarkerInstance = MakeShared<FLyraMarkerInstance>();
+		MarkerInstance->PlayerState = Parameters.PlayerState;
+		MarkerInstance->MarkerId = Parameters.MarkerId;
+		MarkerInstance->Location = Parameters.Location;
 		MarkerInstance->DescriptorObject = Descriptor;
+		MarkerList.Add(MarkerInstance);
 
 		AController* Controller = Cast<AController>(GetOwner());
-		if (Controller)
+		check(Controller);
+
+		ULyraIndicatorManagerComponent* IndicatorManager = Controller->GetComponentByClass<ULyraIndicatorManagerComponent>();
+		if (IndicatorManager)
 		{
-			ULyraIndicatorManagerComponent* IndicatorManager = Controller->GetComponentByClass<ULyraIndicatorManagerComponent>();
-			if (IndicatorManager)
-			{
-				IndicatorManager->AddIndicator(Descriptor);
-			}
+			IndicatorManager->AddIndicator(Descriptor);
 		}
 	}
 }
 
-void ULyraMarkerManagerComponent::HandleMarkerRemove(const FLyraMessageMarkerToggle& Payload)
+void ULyraMarkerManagerComponent::HandleRemoveMarkerEvent(FGameplayTag Channel, const FOnRemoveMarkerParameters& Parameters)
 {
-	if (MarkerInstance.IsValid() && MarkerInstance->DescriptorObject.IsValid())
+	int32 FoundIndex = MarkerList.IndexOfByPredicate([Parameters](const TSharedPtr<FLyraMarkerInstance>& MarkerInstance)
 	{
-		if (Payload.DescriptorObject == MarkerInstance->DescriptorObject)
+		return MarkerInstance->PlayerState == Parameters.PlayerState && MarkerInstance->MarkerId == Parameters.MarkerId;
+	});
+	
+	if (MarkerList.IsValidIndex(FoundIndex))
+	{
+		TSharedPtr<FLyraMarkerInstance>& MarkerInstance = MarkerList[FoundIndex];
+		if (MarkerInstance->DescriptorObject.IsValid())
 		{
-			RemoveExistingMarker();
+			MarkerInstance->DescriptorObject->UnregisterIndicator();
 		}
+		MarkerInstance->PlayerState = nullptr;
+		MarkerInstance->DescriptorObject = nullptr;
+		MarkerList.RemoveAt(FoundIndex);
 	}
 }
-
-void ULyraMarkerManagerComponent::RemoveExistingMarker()
-{
-	if (MarkerInstance.IsValid() && MarkerInstance->DescriptorObject.IsValid())
-	{
-		MarkerInstance->DescriptorObject->UnregisterIndicator();
-		MarkerInstance->Location = FVector::ZeroVector;
-		MarkerInstance->DescriptorObject.Reset();
-	}
-}
-
-

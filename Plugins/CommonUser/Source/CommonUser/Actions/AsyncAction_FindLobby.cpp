@@ -8,8 +8,7 @@
 #include "OnlineSubsystemUtils.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Online/OnlineSessionNames.h"
-
-
+#include "AsyncAction_LogChannel.h"
 
 
 UAsyncAction_FindLobby* UAsyncAction_FindLobby::FindLobby(
@@ -20,7 +19,7 @@ UAsyncAction_FindLobby* UAsyncAction_FindLobby::FindLobby(
 {
 	if (!WorldContextObject || !Player)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UAsyncAction_FindLobby::FindLobby: Invalid parameters"));
+		UE_LOG(LogCommonSessionAsyncAction, Error, TEXT("UAsyncAction_FindLobby::FindLobby: Invalid parameters"));
 		return nullptr;
 	}
 

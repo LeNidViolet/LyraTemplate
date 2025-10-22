@@ -242,27 +242,20 @@ void UCommonSessionSubsystemOssv1::OnStartSessionComplete(FName SessionName, boo
 	UE_LOG(LogCommonSessionOssv1, Log,
 		TEXT("OnStartSessionComplete(SessionName: %s, bWasSuccessful: %d)"),
 		*SessionName.ToString(), bWasSuccessful);
-
-	if (bWantToDestroyPendingSession)
-	{
-		CleanupSession(SessionName);
-	}
 }
 
 void UCommonSessionSubsystemOssv1::OnEndSessionComplete(FName SessionName, bool bWasSuccessful)
 {
 	UE_LOG(LogCommonSessionOssv1, Log,
-		TEXT("OnEndSessionComplete(SessionName: %s, bWasSuccessful: %s)"),
-		*SessionName.ToString(), bWasSuccessful ? TEXT("true") : TEXT("false"));
-	CleanupSession(SessionName);
+		TEXT("OnEndSessionComplete(SessionName: %s, bWasSuccessful: %d)"),
+		*SessionName.ToString(), bWasSuccessful);
 }
 
 void UCommonSessionSubsystemOssv1::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
 {
 	UE_LOG(LogCommonSessionOssv1, Log,
-		TEXT("OnDestroySessionComplete(SessionName: %s, bWasSuccessful: %s)"),
-		*SessionName.ToString(), bWasSuccessful ? TEXT("true") : TEXT("false"));
-	bWantToDestroyPendingSession = false;
+		TEXT("OnDestroySessionComplete(SessionName: %s, bWasSuccessful: %d)"),
+		*SessionName.ToString(), bWasSuccessful);
 }
 
 void UCommonSessionSubsystemOssv1::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
@@ -293,93 +286,34 @@ void UCommonSessionSubsystemOssv1::OnSessionParticipantLeft(FName SessionName, c
 		TEXT("OnSessionParticipantLeft(SessionName: %s, Participant: %s, Reason: %s)"),
 		*SessionName.ToString(), *UniqueId.ToString(), ToLogString(Reason));
 	NotifySessionParticipantLeft(SessionName, UniqueId);
-
-	FUniqueNetIdRepl NetId(UniqueId);
-
-	// Destroy the session when the host or the local player leaves
-	if (IsLocalUserNetId(NetId))
-	{
-		// TODO : split screen user?
-		// for now, just destroy the session
-		CleanupSession(SessionName);
-	}
-
-	if (IsSessionOwnerNetId(SessionName, NetId))
-	{
-		// TODO : promote new session owner?
-		// for now, just destroy the session
-		CleanupSession(SessionName);
-	}
 }
 
 void UCommonSessionSubsystemOssv1::OnSessionFailure(const FUniqueNetId& NetId, ESessionFailure::Type FailureType)
 {
-	UE_LOG(LogCommonSessionOssv1, Warning,
+	UE_LOG(LogCommonSessionOssv1, Error,
 		TEXT("OnSessionFailure(NetId: %s, FailureType: %s)"),
 		*NetId.ToString(), LexToString(FailureType));
-
-	CleanupSession(GetLobbyName());
-	CleanupSession(GetSessionName());
 }
 
 
 void UCommonSessionSubsystemOssv1::OnNetworkFailure(UWorld* World, UNetDriver* NetDriver,
 	ENetworkFailure::Type FailureType, const FString& ErrorString)
 {
-	UE_LOG(LogCommonSessionOssv1, Log,
+	UE_LOG(LogCommonSessionOssv1, Error,
 		TEXT("OnNetworkFailure(World: %s, NetDriver: %s, FailureType: %s, ErrorString: %s)"),
 		*GetNameSafe(World),
 		*GetNameSafe(NetDriver),
 		ENetworkFailure::ToString(FailureType),
 		*ErrorString);
-
-	if (FailureType == ENetworkFailure::ConnectionLost || FailureType == ENetworkFailure::ConnectionTimeout)
-	{
-		CleanupSession(GetLobbyName());
-		CleanupSession(GetSessionName());
-	}
 }
 
 void UCommonSessionSubsystemOssv1::OnTravelFailure(UWorld* World, ETravelFailure::Type FailureType,
 	const FString& ReasonString)
 {
-	UE_LOG(LogCommonSessionOssv1, Warning, TEXT("OnTravelFailure(World: %s, FailureType: %s, ReasonString: %s)"),
+	UE_LOG(LogCommonSessionOssv1, Error, TEXT("OnTravelFailure(World: %s, FailureType: %s, ReasonString: %s)"),
 		*GetPathNameSafe(World),
 		ETravelFailure::ToString(FailureType),
 		*ReasonString);
-}
-
-void UCommonSessionSubsystemOssv1::CleanupSession(FName SessionName)
-{
-	IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(GetWorld());
-	if (OnlineSubsystem)
-	{
-		IOnlineSessionPtr SessionInterface = OnlineSubsystem->GetSessionInterface();
-		if (SessionInterface)
-		{
-			EOnlineSessionState::Type SessionState = SessionInterface->GetSessionState(SessionName);
-			UE_LOG(LogCommonSessionOssv1, Log, TEXT("Session state is %s"), EOnlineSessionState::ToString(SessionState));
-
-			if (EOnlineSessionState::InProgress == SessionState)
-			{
-				UE_LOG(LogCommonSessionOssv1, Log, TEXT("Ending session because of return to front end"));
-				SessionInterface->EndSession(SessionName);
-			}
-			else if (EOnlineSessionState::Ending == SessionState)
-			{
-				UE_LOG(LogCommonSessionOssv1, Log, TEXT("Waiting for session to end on return to main menu"));
-			}
-			else if (EOnlineSessionState::Ended == SessionState || EOnlineSessionState::Pending == SessionState)
-			{
-				UE_LOG(LogCommonSessionOssv1, Log, TEXT("Destroying session on return to main menu"));
-				SessionInterface->DestroySession(SessionName);
-			}
-			else if (EOnlineSessionState::Starting == SessionState || EOnlineSessionState::Creating == SessionState)
-			{
-				UE_LOG(LogCommonSessionOssv1, Log, TEXT("Waiting for session to start, and then we will end it to return to main menu"));
-			}
-		}
-	}
 }
 
 void UCommonSessionSubsystemOssv1::NotifySessionParticipantJoined(FName SessionName, const FUniqueNetId& UniqueId)

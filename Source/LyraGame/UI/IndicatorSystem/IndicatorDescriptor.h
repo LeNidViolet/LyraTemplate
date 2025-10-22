@@ -56,6 +56,11 @@ public:
 	void SetSceneComponent(USceneComponent* InComponent) { Component = InComponent; }
 
 	UFUNCTION(BlueprintCallable)
+	AActor* GetActor() const { return Actor; }
+	UFUNCTION(BlueprintCallable)
+	void SetActor(AActor* InActor) { Actor = InActor; }
+
+	UFUNCTION(BlueprintCallable)
 	FName GetComponentSocketName() const { return ComponentSocketName; }
 	UFUNCTION(BlueprintCallable)
 	void SetComponentSocketName(FName SocketName) { ComponentSocketName = SocketName; }
@@ -83,7 +88,7 @@ public:
 
 	bool CanAutomaticallyRemove() const
 	{
-		return bAutoRemoveWhenIndicatorComponentIsNull && !IsValid(GetSceneComponent());
+		return bAutoRemoveWhenIndicatorComponentIsNull && (!IsValid(GetSceneComponent()) && !IsValid(GetActor()));
 	}
 
 public:
@@ -91,7 +96,7 @@ public:
 	//=======================
 
 	UFUNCTION(BlueprintCallable)
-	bool GetIsVisible() const { return IsValid(GetSceneComponent()) && bVisible; }
+	bool GetIsVisible() const { return (IsValid(GetSceneComponent()) || IsValid(GetActor())) && bVisible; }
 	
 	UFUNCTION(BlueprintCallable)
 	void SetDesiredVisibility(bool InVisible)
@@ -259,6 +264,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UObject> DataObject;
+
+	UPROPERTY()
+	TObjectPtr<AActor> Actor;
 	
 	UPROPERTY()
 	TObjectPtr<USceneComponent> Component;

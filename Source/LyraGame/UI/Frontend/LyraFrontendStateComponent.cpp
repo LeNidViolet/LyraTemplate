@@ -4,7 +4,6 @@
 
 #include "CommonGameInstance.h"
 #include "CommonSessionSubsystem.h"
-#include "CommonSessionSubsystemOssv1.h"
 #include "CommonUserSubsystem.h"
 #include "ControlFlowManager.h"
 #include "GameModes/LyraExperienceManagerComponent.h"
@@ -99,20 +98,11 @@ void ULyraFrontendStateComponent::FlowStep_WaitForUserInitialization(FControlFlo
 	}
 
 	// Always reset sessions
-#if not WITH_SESSIONSUBSYSTEM_OSSV1
 	UCommonSessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UCommonSessionSubsystem>();
 	if (ensure(SessionSubsystem))
 	{
 		SessionSubsystem->CleanUpSessions();
 	}
-#else
-	UCommonSessionSubsystemOssv1* SessionSubsystem = GameInstance->GetSubsystem<UCommonSessionSubsystemOssv1>();
-	if (ensure(SessionSubsystem))
-	{
-		SessionSubsystem->CleanupSession(SessionSubsystem->GetLobbyName());
-		SessionSubsystem->CleanupSession(SessionSubsystem->GetSessionName());
-	}
-#endif
 
 	SubFlow->ContinueFlow();
 }
