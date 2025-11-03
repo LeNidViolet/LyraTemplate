@@ -7,7 +7,6 @@
 #include "LyraDSPlayerController.h"
 #include "LyraDSPlayerState.h"
 #include "LyraLogChannels.h"
-#include "Messages/LyraNotificationMessage_Marker.h"
 #include "Messages/LyraNotificationMessage_Participant.h"
 #include "GameFramework/PlayerState.h"
 #include "GameModes/LyraExperienceManagerComponent.h"
@@ -34,10 +33,10 @@ void ALyraDSGameMode::PostLogin(APlayerController* NewPlayer)
 	if (HasAuthority())
 	{
 		ALyraDSGameState* GameState = GetGameState<ALyraDSGameState>();
-		check(GameState != nullptr);
+		check(GameState);
 
 		ALyraDSPlayerState* PlayerState = NewPlayer->GetPlayerState<ALyraDSPlayerState>();
-		check(PlayerState != nullptr);
+		check(PlayerState);
 
 		int32 ColorIndex = NextColorIndex++ % AvailablePlayerColors.Num();
 		FColor AssignedColor = AvailablePlayerColors[ColorIndex];
@@ -70,10 +69,10 @@ void ALyraDSGameMode::Logout(AController* Exiting)
 	if (HasAuthority())
 	{
 		ALyraDSGameState* GameState = GetGameState<ALyraDSGameState>();
-		check(GameState != nullptr);
+		check(GameState);
 
-		APlayerState* PlayerState = Exiting->GetPlayerState<APlayerState>();
-		check(PlayerState != nullptr);
+		ALyraDSPlayerState* PlayerState = Exiting->GetPlayerState<ALyraDSPlayerState>();
+		check(PlayerState);
 
 		FUniqueNetIdRepl UniqueIdRepl = PlayerState->GetUniqueId();
 		if (UniqueIdRepl.IsValid())
@@ -83,6 +82,10 @@ void ALyraDSGameMode::Logout(AController* Exiting)
 				*PlayerState->GetPlayerName(),
 				*UniqueId.ToString())
 		}
+
+		// 移除该玩家的所有标记点
+		PlayerState->RemoveAllWorldMarkers();
+
 
 		FOnSessionParticipantEventParameters Parameters;
 		Parameters.EventType = EOnSessionParticipantEventType::Left;
@@ -97,82 +100,5 @@ void ALyraDSGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 }
-
-
-
-
-
-
-void ALyraDSGameMode::ProcessServerRequestPlaceMarker(
-	ALyraDSPlayerController* PlayerController,
-	const FServerRequestPlaceMarkerParameters& Parameters)
-{
-	ALyraDSGameState* GameState = GetGameState<ALyraDSGameState>();
-	check(GameState != nullptr);
-
-	ALyraDSPlayerState* PlayerState = PlayerController->GetPlayerState<ALyraDSPlayerState>();
-	check(PlayerState != nullptr);
-
-	// Remove Existing Marker(s) Belong this Player
-	int32 FoundIndex = PlayerMarkers.IndexOfByPredicate([PlayerState](const TSharedPtr<FPlayerMarkerData>& Marker)
-		{
-			return Marker.IsValid() && Marker->MarkerOwner == PlayerState;
-		});
-
-	if (FoundIndex != INDEX_NONE)
-	{
-		TSharedPtr<FPlayerMarkerData> MarkerToRemove = PlayerMarkers[FoundIndex];
-
-		FOnRemoveMarkerParameters RemoveMarkerParameters;
-		RemoveMarkerParameters.MarkerId = MarkerToRemove->MarkerId;
-		RemoveMarkerParameters.PlayerState = PlayerState;
-		GameState->Broadcast_RemoveMarkerEvent(RemoveMarkerParameters);
-
-		PlayerMarkers.RemoveAt(FoundIndex);
-	}
-
-
-	TSharedPtr<FPlayerMarkerData> Marker = MakeShared<FPlayerMarkerData>();
-	Marker->MarkerOwner = PlayerState;
-	Marker->MarkerId = FGuid::NewGuid();
-	Marker->MarkerLocation = Parameters.Location;
-	PlayerMarkers.Add(Marker);
-
-	FOnPlaceMarkerParameters PlaceMarkerParameters;
-	PlaceMarkerParameters.Location = Marker->MarkerLocation;
-	PlaceMarkerParameters.MarkerId = Marker->MarkerId;
-	PlaceMarkerParameters.PlayerState = PlayerState;
-
-	GameState->Broadcast_PlaceMarkerEvent(PlaceMarkerParameters);
-}
-
-void ALyraDSGameMode::ProcessServerRequestRemoveMarker(
-	ALyraDSPlayerController* PlayerController,
-	const FServerRequestRemoveMarkerParameters& Parameters)
-{
-	ALyraDSGameState* GameState = GetGameState<ALyraDSGameState>();
-	check(GameState != nullptr);
-
-	ALyraDSPlayerState* PlayerState = PlayerController->GetPlayerState<ALyraDSPlayerState>();
-	check(PlayerState != nullptr);
-
-	int32 FoundIndex = PlayerMarkers.IndexOfByPredicate([Parameters, PlayerState](const TSharedPtr<FPlayerMarkerData>& Marker)
-		{
-			return Marker.IsValid() && Marker->MarkerId == Parameters.MarkerId && Marker->MarkerOwner == PlayerState;
-		});
-
-	if (FoundIndex != INDEX_NONE)
-	{
-		TSharedPtr<FPlayerMarkerData> MarkerToRemove = PlayerMarkers[FoundIndex];
-
-		FOnRemoveMarkerParameters RemoveMarkerParameters;
-		RemoveMarkerParameters.MarkerId = MarkerToRemove->MarkerId;
-		RemoveMarkerParameters.PlayerState = PlayerState;
-		GameState->Broadcast_RemoveMarkerEvent(RemoveMarkerParameters);
-
-		PlayerMarkers.RemoveAt(FoundIndex);
-	}
-}
-
 
 #undef LOCTEXT_NAMESPACE

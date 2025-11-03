@@ -3,37 +3,15 @@
 
 #include "LyraNotificationMessage_Marker.generated.h"
 
-USTRUCT(BlueprintType)
-struct FServerRequestPlaceMarkerParameters
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FVector Location = FVector::Zero();
-};
+class ALyraWorldMarker;
 
 USTRUCT(BlueprintType)
-struct FServerRequestRemoveMarkerParameters
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGuid MarkerId;
-};
-
-USTRUCT(BlueprintType)
-struct FOnPlaceMarkerParameters
+struct FOnAddMarkerParameters
 {
 	GENERATED_BODY()
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	TObjectPtr<APlayerState> PlayerState;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FVector Location = FVector::Zero();
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FGuid MarkerId;
+	TObjectPtr<ALyraWorldMarker> MarkerActor;
 };
 
 USTRUCT(BlueprintType)
@@ -42,8 +20,5 @@ struct FOnRemoveMarkerParameters
 	GENERATED_BODY()
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	TObjectPtr<APlayerState> PlayerState;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FGuid MarkerId;
+	int32 MarkerId = -1;
 };

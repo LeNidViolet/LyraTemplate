@@ -13,3 +13,16 @@ const ULyraGameData& ULyraGameData::ULyraGameData::Get()
 {
 	return ULyraAssetManager::Get().GetGameData();
 }
+
+TSubclassOf<UIndicatorDescriptor> ULyraGameData::GetIndicatorDescriptorClassForMarkerType(
+	ELyraWorldMarkerType MarkerType) const
+{
+	for (const FLyraWorldMarkerTypeIndicatorMapping& TypeIndicatorMapping : TypeIndicatorMappings)
+	{
+		if (TypeIndicatorMapping.MarkerType == MarkerType)
+		{
+			return TypeIndicatorMapping.IndicatorDescriptorClass;
+		}
+	}
+	return TSubclassOf<UIndicatorDescriptor>();
+}

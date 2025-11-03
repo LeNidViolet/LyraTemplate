@@ -4,15 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameModes/LyraGameState.h"
-#include "Messages/LyraVerbMessageReplication.h"
 #include "LyraDSGameState.generated.h"
 
 #define UE_API LYRAGAME_API
 
 struct FLyraNotificationMessage;
 struct FOnSessionParticipantEventParameters;
-struct FOnPlaceMarkerParameters;
-struct FOnRemoveMarkerParameters;
 
 
 UCLASS(MinimalAPI)
@@ -25,8 +22,6 @@ public:
 	UE_API ALyraDSGameState(const FObjectInitializer& ObjectInitializer);
 
 	UE_API void Broadcast_SessionParticipantEvent(const FOnSessionParticipantEventParameters& Parameters);
-	UE_API void Broadcast_PlaceMarkerEvent(const FOnPlaceMarkerParameters& Parameters);
-	UE_API void Broadcast_RemoveMarkerEvent(const FOnRemoveMarkerParameters& Parameters);
 
 
 	// Send a notify message that all clients will (probably) get
@@ -39,9 +34,9 @@ public:
 	UFUNCTION(NetMulticast, Reliable, BlueprintCallable, Category = "Lyra|GameState")
 	UE_API void Multicast_ReliableMessageToClients(const FLyraNotificationMessage& Message);
 
-private:
-	UPROPERTY(Replicated)
-	FLyraVerbMessageReplication ReplicatedMessages;
+protected:
+	UE_API virtual void BeginPlay() override;
+	UE_API virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 };
 
 #undef UE_API

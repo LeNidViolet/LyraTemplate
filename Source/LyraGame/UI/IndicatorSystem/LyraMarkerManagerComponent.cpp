@@ -9,8 +9,12 @@
 #include "Messages/LyraNotificationMessage_Marker.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "GameFramework/PlayerState.h"
+#include "Interaction/IInteractableMarker.h"
+#include "Interaction/LyraWorldMarker.h"
 #include "Player/LyraPlayerController.h"
-
+#include "Blueprint/UserWidget.h"
+#include "GameModes/Session/LyraDSPlayerState.h"
+#include "System/LyraGameData.h"
 
 
 // Sets default values for this component's properties
@@ -20,31 +24,8 @@ ULyraMarkerManagerComponent::ULyraMarkerManagerComponent(const FObjectInitialize
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
-
-	// ...
 }
 
-ULyraMarkerManagerComponent* ULyraMarkerManagerComponent::GetComponent(AController* Controller)
-{
-	if (Controller)
-	{
-		return Controller->FindComponentByClass<ULyraMarkerManagerComponent>();
-	}
-
-	return nullptr;
-}
-
-TSharedPtr<FLyraMarkerInstance> ULyraMarkerManagerComponent::GetMarkerInstance(APlayerState* PlayerState)
-{
-	for (TSharedPtr<FLyraMarkerInstance>& MarkerInstance : MarkerList)
-	{
-		if (MarkerInstance->PlayerState == PlayerState)
-		{
-			return MarkerInstance;
-		}
-	}
-	return nullptr;
-}
 
 // Called when the game starts
 void ULyraMarkerManagerComponent::BeginPlay()
@@ -56,15 +37,23 @@ void ULyraMarkerManagerComponent::BeginPlay()
 	{
 		if (PC->IsLocalPlayerController())
 		{
-			if (Initialize())
-			{
-				return ;
-			}
+			RegisterMessageHandlers();
+
+			// 这里设置一个定时器, 用于不断检测当前视线是否对准了标记点, 以显示交互提示
+			UWorld* World = GetWorld();
+			check(World);
+			World->GetTimerManager().SetTimer(
+				TimerHandle,
+				this,
+				&ThisClass::ToggleMarkerPromptVisbility,
+				ScanRate,
+				true);
+
+			return ;
 		}
 	}
 
 	DestroyComponent();
-
 }
 
 void ULyraMarkerManagerComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -74,84 +63,42 @@ void ULyraMarkerManagerComponent::EndPlay(const EEndPlayReason::Type EndPlayReas
 	{
 		if (PC->IsLocalPlayerController())
 		{
-			Deinitialize();
+			UnregisterMessageHandlers();
+
+			UWorld* World = GetWorld();
+			if (World && IsValid(World))
+			{
+				World->GetTimerManager().ClearTimer(TimerHandle);
+			}
 			return ;
 		}
 	}
 	Super::EndPlay(EndPlayReason);
 }
 
-int32 ULyraMarkerManagerComponent::GetDistanceToLocation(UIndicatorDescriptor* DescriptorObject, const FVector& TargetLocation)
+void ULyraMarkerManagerComponent::RegisterMessageHandlers()
 {
-	int32 Distance = -1;
-
-	for (TSharedPtr<FLyraMarkerInstance>& MarkerInstance : MarkerList)
-	{
-		if (MarkerInstance->DescriptorObject.IsValid() && MarkerInstance->DescriptorObject == DescriptorObject)
-		{
-			Distance = FMath::RoundToInt(FVector::Dist(TargetLocation, MarkerInstance->Location) / 100.0f);
-			break;
-		}
-	}
-
-	return Distance;
-}
-
-FGuid ULyraMarkerManagerComponent::GetMarkerId(UIndicatorDescriptor* DescriptorObject)
-{
-	for (TSharedPtr<FLyraMarkerInstance>& MarkerInstance : MarkerList)
-	{
-		if (MarkerInstance->DescriptorObject.IsValid() && MarkerInstance->DescriptorObject == DescriptorObject)
-		{
-			return MarkerInstance->MarkerId;
-		}
-	}
-
-	return FGuid();
-}
-
-APlayerState* ULyraMarkerManagerComponent::GetMarkerPlayerState(UIndicatorDescriptor* DescriptorObject)
-{
-	for (TSharedPtr<FLyraMarkerInstance>& MarkerInstance : MarkerList)
-	{
-		if (MarkerInstance->DescriptorObject.IsValid() && MarkerInstance->DescriptorObject == DescriptorObject)
-		{
-			return MarkerInstance->PlayerState.Get();
-		}
-	}
-
-	return nullptr;
-}
-
-bool ULyraMarkerManagerComponent::Initialize()
-{
-	bool Result = false;
-	UGameInstance* GameInstance = GetOwner()->GetGameInstance();
+	UGameInstance* GameInstance = GetGameInstance<UGameInstance>();
 	if (GameInstance)
 	{
 		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
 		if (MessageSubsystem)
 		{
-			MarkerAddEventListener = MessageSubsystem->RegisterListener<FOnPlaceMarkerParameters>(
+			MarkerAddEventListener = MessageSubsystem->RegisterListener<FOnAddMarkerParameters>(
 				LyraGameplayTags::Gameplay_Message_Marker_Add,
 				this,
-				&ThisClass::HandlePlaceMarkerEvent);
-
+				&ThisClass::HandleAddMarkerEvent);
 			MarkerRemoveEventListener = MessageSubsystem->RegisterListener<FOnRemoveMarkerParameters>(
 				LyraGameplayTags::Gameplay_Message_Marker_Remove,
 				this,
 				&ThisClass::HandleRemoveMarkerEvent);
-
-			Result = true;
 		}
 	}
-
-	return Result;
 }
 
-void ULyraMarkerManagerComponent::Deinitialize()
+void ULyraMarkerManagerComponent::UnregisterMessageHandlers()
 {
-	UGameInstance* GameInstance = GetOwner()->GetGameInstance();
+	UGameInstance* GameInstance = GetGameInstance<UGameInstance>();
 	if (GameInstance)
 	{
 		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
@@ -169,49 +116,317 @@ void ULyraMarkerManagerComponent::Deinitialize()
 	}
 }
 
-void ULyraMarkerManagerComponent::HandlePlaceMarkerEvent(FGameplayTag Channel, const FOnPlaceMarkerParameters& Parameters)
+
+
+
+
+
+
+ULyraMarkerManagerComponent* ULyraMarkerManagerComponent::GetComponent(AController* Controller)
 {
-	if (Parameters.PlayerState && DescriptorClass)
+	if (Controller)
 	{
-		// The rest of the settings are coming from the **CDO**.
-		UIndicatorDescriptor* Descriptor = NewObject<UIndicatorDescriptor>(this, DescriptorClass);
-		Descriptor->SetActor(Parameters.PlayerState.Get());
-		Descriptor->SetWorldPosition(Parameters.Location);
+		return Controller->FindComponentByClass<ULyraMarkerManagerComponent>();
+	}
 
-		TSharedPtr<FLyraMarkerInstance> MarkerInstance = MakeShared<FLyraMarkerInstance>();
-		MarkerInstance->PlayerState = Parameters.PlayerState;
-		MarkerInstance->MarkerId = Parameters.MarkerId;
-		MarkerInstance->Location = Parameters.Location;
-		MarkerInstance->DescriptorObject = Descriptor;
-		MarkerList.Add(MarkerInstance);
+	return nullptr;
+}
 
-		AController* Controller = Cast<AController>(GetOwner());
-		check(Controller);
 
-		ULyraIndicatorManagerComponent* IndicatorManager = Controller->GetComponentByClass<ULyraIndicatorManagerComponent>();
-		if (IndicatorManager)
+TArray<FLyraMarkerInstance*> ULyraMarkerManagerComponent::GetMarkerInstancesForOwnerPlayer(
+	APlayerState* PlayerState,  bool bWithInvisible) const
+{
+	TArray<FLyraMarkerInstance*> Results;
+
+	for (const TSharedPtr<FLyraMarkerInstance>& MarkerInstance : MarkerList)
+	{
+		TWeakObjectPtr<ALyraWorldMarker> MarkerActor = MarkerInstance->MarkerActor;
+		if (MarkerActor.IsValid() && MarkerActor->GetOwnerPlayer() == PlayerState)
 		{
-			IndicatorManager->AddIndicator(Descriptor);
+			TWeakObjectPtr<UIndicatorDescriptor> IndicatorDescriptor = MarkerInstance->IndicatorDescriptor;
+			if (IndicatorDescriptor.IsValid())
+			{
+				if (!IndicatorDescriptor->GetIsVisible())
+				{
+					if (bWithInvisible) Results.Add(MarkerInstance.Get());
+				}
+				else
+				{
+					Results.Add(MarkerInstance.Get());
+				}
+			}
 		}
 	}
+
+	return Results;
+}
+
+
+TArray<ALyraWorldMarker*> ULyraMarkerManagerComponent::GetMarkerActorsForOwnerPlayer(
+	APlayerState* PlayerState, bool bWithInvisible) const
+{
+	TArray<ALyraWorldMarker*> Results;
+
+	for (const TSharedPtr<FLyraMarkerInstance>& MarkerInstance : MarkerList)
+	{
+		TWeakObjectPtr<ALyraWorldMarker> MarkerActor = MarkerInstance->MarkerActor;
+		if (MarkerActor.IsValid() && MarkerActor->GetOwnerPlayer() == PlayerState)
+		{
+			TWeakObjectPtr<UIndicatorDescriptor> IndicatorDescriptor = MarkerInstance->IndicatorDescriptor;
+			if (IndicatorDescriptor.IsValid())
+			{
+				if (!IndicatorDescriptor->GetIsVisible())
+				{
+					if (bWithInvisible) Results.Add(MarkerActor.Get());
+				}
+				else
+				{
+					Results.Add(MarkerActor.Get());
+				}
+			}
+		}
+	}
+
+	return Results;
+}
+
+ALyraWorldMarker* ULyraMarkerManagerComponent::GetMarkerActorForIndicatorDescriptor(UIndicatorDescriptor* IndicatorDescriptor) const
+{
+	for (const TSharedPtr<FLyraMarkerInstance>& MarkerInstance : MarkerList)
+	{
+		if (MarkerInstance->IndicatorDescriptor.IsValid() && MarkerInstance->IndicatorDescriptor == IndicatorDescriptor)
+		{
+			TWeakObjectPtr<ALyraWorldMarker> MarkerActor = MarkerInstance->MarkerActor;
+			if (MarkerActor.IsValid())
+			{
+				return MarkerActor.Get();
+			}
+			break;
+		}
+	}
+
+	return nullptr;
+}
+
+int32 ULyraMarkerManagerComponent::GetDistanceToLocation(UIndicatorDescriptor* IndicatorDescriptor, const FVector& TargetLocation) const
+{
+	int32 Distance = -1;
+
+	for (const TSharedPtr<FLyraMarkerInstance>& MarkerInstance : MarkerList)
+	{
+		if (MarkerInstance->IndicatorDescriptor.IsValid() && MarkerInstance->IndicatorDescriptor == IndicatorDescriptor)
+		{
+			TWeakObjectPtr<ALyraWorldMarker> MarkerActor = MarkerInstance->MarkerActor;
+			if (MarkerActor.IsValid())
+			{
+				Distance = FMath::RoundToInt(FVector::Dist(TargetLocation, MarkerActor->GetTransform().GetLocation()) / 100.0f);
+				break;
+			}
+		}
+	}
+
+	return Distance;
+}
+
+
+
+
+void ULyraMarkerManagerComponent::HandleAddMarkerEvent(FGameplayTag Channel, const FOnAddMarkerParameters& Parameters)
+{
+	ALyraWorldMarker* MarkerActor = Parameters.MarkerActor.Get();
+	if (!IsValid(MarkerActor)) return;
+
+	// UE_LOG(LogTemp, Error, TEXT("HandleAddMarkerEvent Player %s  Id %d"), *MarkerActor->GetOwnerPlayer()->GetName(), MarkerActor->GetMarkerId());
+
+	AController* LocalController = Cast<AController>(GetOwner());
+	check(LocalController);
+	APlayerState* LocalPlayerState = LocalController->GetPlayerState<APlayerState>();
+	check(LocalPlayerState);
+
+	ULyraIndicatorManagerComponent* IndicatorManager = LocalController->GetComponentByClass<ULyraIndicatorManagerComponent>();
+	if (!IndicatorManager) return;
+
+
+	// 从全局数据表中得到需要使用的 IndicatorDescriptor 类
+	TSubclassOf<UIndicatorDescriptor> IndicatorDescriptorClass = ULyraGameData::Get().GetIndicatorDescriptorClassForMarkerType(MarkerActor->GetMarkerType());
+	check(IndicatorDescriptorClass);
+
+	// The rest of the settings are coming from the **CDO**.
+	UIndicatorDescriptor* Descriptor = NewObject<UIndicatorDescriptor>(this, IndicatorDescriptorClass);
+	Descriptor->SetDataObject(MarkerActor);
+	Descriptor->SetSceneComponent(MarkerActor->GetRootComponent());
+
+	// 根据不同子类进行差异化布局调整
+	Descriptor->LayoutIndicator(MarkerActor);
+
+	if (MarkerActor->IsPredictedMarker())
+	{
+		// 预测标记点
+		if (LocalPlayerState)
+		{
+			// 预测标记点一定是属于本地玩家的
+			check(MarkerActor->GetOwnerPlayer() == LocalPlayerState);
+		}
+	}
+	else
+	{
+		// 如果是本地玩家的非预测标记点, 通知本地玩家去删除可能存在的预测标记点
+		if (MarkerActor->GetOwnerPlayer() == LocalPlayerState)
+		{
+			ALyraDSPlayerState* DSPlayerState = Cast<ALyraDSPlayerState>(LocalPlayerState);
+			DSPlayerState->RemoveWorldMarkerFromCache(ALyraWorldMarker::PredictedId());
+		}
+	}
+
+	TSharedPtr<FLyraMarkerInstance> MarkerInstance = MakeShared<FLyraMarkerInstance>();
+	MarkerInstance->IndicatorDescriptor = Descriptor;
+	MarkerInstance->MarkerActor = MarkerActor;
+	MarkerList.Add(MarkerInstance);
+
+	IndicatorManager->AddIndicator(Descriptor);
 }
 
 void ULyraMarkerManagerComponent::HandleRemoveMarkerEvent(FGameplayTag Channel, const FOnRemoveMarkerParameters& Parameters)
 {
+	// UE_LOG(LogTemp, Error, TEXT("HandleRemoveMarkerEvent  Id %d"), Parameters.MarkerId);
+
 	int32 FoundIndex = MarkerList.IndexOfByPredicate([Parameters](const TSharedPtr<FLyraMarkerInstance>& MarkerInstance)
 	{
-		return MarkerInstance->PlayerState == Parameters.PlayerState && MarkerInstance->MarkerId == Parameters.MarkerId;
+		return MarkerInstance->MarkerActor.IsValid() && MarkerInstance->MarkerActor->GetMarkerId() == Parameters.MarkerId;
 	});
-	
+
 	if (MarkerList.IsValidIndex(FoundIndex))
 	{
 		TSharedPtr<FLyraMarkerInstance>& MarkerInstance = MarkerList[FoundIndex];
-		if (MarkerInstance->DescriptorObject.IsValid())
+		if (MarkerInstance->IndicatorDescriptor.IsValid())
 		{
-			MarkerInstance->DescriptorObject->UnregisterIndicator();
+			MarkerInstance->IndicatorDescriptor->UnregisterIndicator();
 		}
-		MarkerInstance->PlayerState = nullptr;
-		MarkerInstance->DescriptorObject = nullptr;
+
+		MarkerInstance->MarkerActor = nullptr;
+		MarkerInstance->IndicatorDescriptor = nullptr;
+
 		MarkerList.RemoveAt(FoundIndex);
 	}
+}
+
+void ULyraMarkerManagerComponent::ToggleMarkerPromptVisbility()
+{
+	ALyraPlayerController* PlayerController = GetController<ALyraPlayerController>();
+	if (PlayerController)
+	{
+		UIndicatorDescriptor* ClosestIndicatorDescriptor = nullptr;
+		ALyraWorldMarker* ClosestWorldMarker = nullptr;
+		float ClosestDistance = ScanRadius;
+
+		// 取得屏幕中心点
+		int32 ViewportX, ViewportY;
+		PlayerController->GetViewportSize(ViewportX, ViewportY);
+		FVector2D ScreenCenter(ViewportX * 0.5f, ViewportY * 0.5f);
+
+		// 扫描属于本地玩家的所有标记点 找到距离屏幕中心最近的那个
+		TArray<FLyraMarkerInstance*> MarkerInstances = GetMarkerInstancesForOwnerPlayer(PlayerController->GetPlayerState<APlayerState>(), true);
+		for (FLyraMarkerInstance* MarkerInstance : MarkerInstances)
+		{
+			ALyraWorldMarker* MarkerActor = MarkerInstance->MarkerActor.Get();
+			UIndicatorDescriptor* IndicatorDescriptor = MarkerInstance->IndicatorDescriptor.Get();
+
+			if (!IsValid(MarkerActor) || !IsValid(IndicatorDescriptor)) continue;
+
+			// 得到标记点投影在屏幕上的位置
+			FVector2D MarkerScreenPos;
+			bool bIsOnScreen = PlayerController->ProjectWorldLocationToScreen(
+				MarkerActor->GetActorLocation(),
+				MarkerScreenPos,
+				true);
+			if (!bIsOnScreen) continue;
+
+			const float PixelDistance = FVector2D::Distance(MarkerScreenPos, ScreenCenter);
+
+			// 选择最接近屏幕中心的标记点
+			if (PixelDistance <= ClosestDistance)
+			{
+				ClosestDistance = PixelDistance;
+				ClosestIndicatorDescriptor = IndicatorDescriptor;
+				ClosestWorldMarker = MarkerActor;
+			}
+		}
+
+		bool bNewObject = (ClosestIndicatorDescriptor != nullptr) && (LastPromptIndicatorDescriptor != ClosestIndicatorDescriptor);
+		bool bShouldShowPrompt = ClosestIndicatorDescriptor != nullptr;
+
+		// 检查状态是否真的需要改变: 是否找到了新目标，或者可见性需要切换
+		if ((bShouldShowPrompt != bLastPromptVisible) || bNewObject)
+		{
+			// 如果找到了一个新对象, 或者目标存在, 但上一个不存在 从 A 切换到 B
+			if (bNewObject)
+			{
+				// 1. 隐藏旧的提示
+				if (LastPromptMarkerActor.IsValid())
+					ShowOrHideMarkerPrompt(LastPromptIndicatorDescriptor.Get(), false);
+
+				// 2. 显示新的提示
+				ShowOrHideMarkerPrompt(ClosestIndicatorDescriptor, true);
+
+				// 3. 更新所有状态追踪变量
+				LastPromptIndicatorDescriptor = ClosestIndicatorDescriptor;
+				LastPromptMarkerActor = ClosestWorldMarker;
+				bLastPromptVisible = true;
+			}
+			// 否则，只是可见性状态的简单切换 (例如，从显示到隐藏，或反之)
+			else
+			{
+				if (!bShouldShowPrompt) // 状态变化为“隐藏”
+				{
+					// 使用 LastPromptIndicatorDescriptor 来隐藏上一次显示的提示
+					if (LastPromptIndicatorDescriptor.IsValid())
+					{
+						ShowOrHideMarkerPrompt(LastPromptIndicatorDescriptor.Get(), false);
+						// 清空 LastPromptIndicatorDescriptor 以防再次触发
+						LastPromptIndicatorDescriptor = nullptr;
+						LastPromptMarkerActor = nullptr;
+					}
+				}
+				else // 状态变化为“显示” (理论上不应该发生，因为 NewObject == false)
+				{
+					// 如果走到这里，说明是 LastPromptIndicatorDescriptor != nullptr 且 ClosestIndicatorDescriptor != nullptr 且它们相等，
+					// 并且上一个 Tick 隐藏了，这个 Tick 应该显示，这种路径非常少见
+					ShowOrHideMarkerPrompt(ClosestIndicatorDescriptor, true);
+				}
+
+				bLastPromptVisible = bShouldShowPrompt;
+			}
+		}
+	}
+}
+
+void ULyraMarkerManagerComponent::ShowOrHideMarkerPrompt(UIndicatorDescriptor* IndicatorDescriptor, bool bShow)
+{
+	if (!IndicatorDescriptor) return;
+
+	TWeakObjectPtr<UUserWidget> Widget = IndicatorDescriptor->IndicatorWidget;
+	if (!Widget.IsValid()) return;
+
+	// 需要确保 Widget 实现了交互提示接口
+	if (Widget->GetClass()->ImplementsInterface(UInteractableMarker::StaticClass()))
+	{
+		if (bShow)
+			IInteractableMarker::Execute_OnShowMarkerInteractablePrompt(Widget.Get(), IndicatorDescriptor);
+		else
+			IInteractableMarker::Execute_OnHideMarkerInteractablePrompt(Widget.Get(), IndicatorDescriptor);
+	}
+}
+
+bool ULyraMarkerManagerComponent::IsAimingAtMarker() const
+{
+	return bLastPromptVisible;
+}
+
+ALyraWorldMarker* ULyraMarkerManagerComponent::GetAimingMarkerActor() const
+{
+	if (IsAimingAtMarker() && LastPromptMarkerActor.IsValid())
+	{
+		return LastPromptMarkerActor.Get();
+	}
+	return nullptr;
 }

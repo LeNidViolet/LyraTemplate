@@ -26,7 +26,7 @@ struct FNameplateCreatedEntry
 	UPROPERTY()
 	TSubclassOf<UIndicatorDescriptor> DescriptorClass;
 	UPROPERTY()
-	TWeakObjectPtr<UIndicatorDescriptor> DescriptorObject;
+	TWeakObjectPtr<UIndicatorDescriptor> IndicatorDescriptor;
 };
 
 

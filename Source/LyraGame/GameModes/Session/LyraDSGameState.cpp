@@ -7,49 +7,38 @@
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "Messages/LyraNotificationMessage.h"
 #include "Messages/LyraNotificationMessage_Participant.h"
-#include "Messages/LyraNotificationMessage_Marker.h"
-#include "Net/UnrealNetwork.h"
 
+
+//=============================================================================
+// ALyraDSGameState
+//=============================================================================
 
 ALyraDSGameState::ALyraDSGameState(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	ReplicatedMessages.SetOwner(this);
+
 }
 
-void ALyraDSGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void ALyraDSGameState::BeginPlay()
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ALyraDSGameState, ReplicatedMessages);
+	Super::BeginPlay();
 }
+
+void ALyraDSGameState::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+}
+
+// void ALyraDSGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+// {
+// 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+// }
 
 void ALyraDSGameState::Broadcast_SessionParticipantEvent(const FOnSessionParticipantEventParameters& Parameters)
 {
 	FLyraNotificationMessage Message;
 	Message.TargetChannel = LyraGameplayTags::ToastMessage_Session_MemberEvent;
-	Message.PayloadData = FInstancedStruct::Make<FOnSessionParticipantEventParameters>(Parameters);
-	//Message.PayloadData.InitializeAs(FOnSessionParticipantEventParameters::StaticStruct(), reinterpret_cast<const uint8*>(&Parameters));
-
-	Multicast_MessageToClients(Message);
-}
-
-void ALyraDSGameState::Broadcast_PlaceMarkerEvent(const FOnPlaceMarkerParameters& Parameters)
-{
-	FLyraNotificationMessage Message;
-	Message.TargetChannel = LyraGameplayTags::Gameplay_Message_Marker_Add;
-	Message.PayloadData = FInstancedStruct::Make<FOnPlaceMarkerParameters>(Parameters);
-	//Message.PayloadData.InitializeAs(FOnPlaceMarkerParameters::StaticStruct(), reinterpret_cast<const uint8*>(&Parameters));
-
-	Multicast_MessageToClients(Message);
-}
-
-void ALyraDSGameState::Broadcast_RemoveMarkerEvent(const FOnRemoveMarkerParameters& Parameters)
-{
-	FLyraNotificationMessage Message;
-	Message.TargetChannel = LyraGameplayTags::Gameplay_Message_Marker_Remove;
-	Message.PayloadData = FInstancedStruct::Make<FOnRemoveMarkerParameters>(Parameters);
-	//Message.PayloadData.InitializeAs(FOnRemoveMarkerParameters::StaticStruct(), reinterpret_cast<const uint8*>(&Parameters));
+	Message.PayloadData.InitializeAs<FOnSessionParticipantEventParameters>(Parameters);
 
 	Multicast_MessageToClients(Message);
 }
@@ -58,7 +47,14 @@ void ALyraDSGameState::Multicast_MessageToClients_Implementation(const FLyraNoti
 {
 	if (GetNetMode() != NM_DedicatedServer)
 	{
-		UGameplayMessageSubsystem::Get(this).BroadcastMessage(Message.TargetChannel, Message.PayloadData);
+		if (UGameInstance* GameInstance = GetGameInstance())
+		{
+			UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
+			if (MessageSubsystem)
+			{
+				MessageSubsystem->BroadcastMessage(Message.TargetChannel, Message.PayloadData);
+			}
+		}
 	}
 }
 
@@ -66,4 +62,3 @@ void ALyraDSGameState::Multicast_ReliableMessageToClients_Implementation(const F
 {
 	Multicast_MessageToClients_Implementation(Message);
 }
-

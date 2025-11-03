@@ -20,9 +20,9 @@ class IInteractableMarker
 
 public:
 
-	UFUNCTION(BlueprintImplementableEvent, Category="Marker")
+	UFUNCTION(BlueprintImplementableEvent, Category="WorldMarker")
 	void OnShowMarkerInteractablePrompt(UIndicatorDescriptor* Descriptor);
 
-	UFUNCTION(BlueprintImplementableEvent, Category="Marker")
+	UFUNCTION(BlueprintImplementableEvent, Category="WorldMarker")
 	void OnHideMarkerInteractablePrompt(UIndicatorDescriptor* Descriptor);
 };

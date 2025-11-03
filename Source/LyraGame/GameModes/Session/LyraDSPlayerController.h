@@ -9,9 +9,6 @@
 
 #define UE_API LYRAGAME_API
 
-struct FServerRequestPlaceMarkerParameters;
-struct FServerRequestRemoveMarkerParameters;
-
 /**
  *
  */
@@ -22,13 +19,6 @@ class ALyraDSPlayerController : public ALyraPlayerController
 
 public:
 	UE_API ALyraDSPlayerController(const FObjectInitializer& ObjectInitializer);
-
-	UFUNCTION(BlueprintCallable, Server, Reliable)
-	UE_API void Server_Request_PlaceMarker(const FServerRequestPlaceMarkerParameters& Parameters);
-
-	UFUNCTION(BlueprintCallable, Server, Reliable)
-	UE_API void Server_Request_RemoveMarker(const FServerRequestRemoveMarkerParameters& Parameters);
-
 };
 
 #undef UE_API

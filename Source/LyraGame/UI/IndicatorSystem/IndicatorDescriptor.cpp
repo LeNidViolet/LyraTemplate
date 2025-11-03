@@ -10,36 +10,23 @@
 
 bool FIndicatorProjection::Project(const UIndicatorDescriptor& IndicatorDescriptor, const FSceneViewProjectionData& InProjectionData, const FVector2f& ScreenSize, FVector& OutScreenPositionWithDepth)
 {
-	const USceneComponent* Component = IndicatorDescriptor.GetSceneComponent();
-	const AActor* Actor = IndicatorDescriptor.GetActor();
-	const EActorCanvasProjectionMode ProjectionMode = IndicatorDescriptor.GetProjectionMode();
-
-	if ((Component && ProjectionMode != EActorCanvasProjectionMode::WorldPoint) || (Actor || ProjectionMode == EActorCanvasProjectionMode::WorldPoint))
+	if (USceneComponent* Component = IndicatorDescriptor.GetSceneComponent())
 	{
 		TOptional<FVector> WorldLocation;
-		if (ProjectionMode != EActorCanvasProjectionMode::WorldPoint)
+		if (IndicatorDescriptor.GetComponentSocketName() != NAME_None)
 		{
-			if (IndicatorDescriptor.GetComponentSocketName() != NAME_None)
-			{
-				WorldLocation = Component->GetSocketTransform(IndicatorDescriptor.GetComponentSocketName()).GetLocation();
-			}
-			else
-			{
-				WorldLocation = Component->GetComponentLocation();
-			}
+			WorldLocation = Component->GetSocketTransform(IndicatorDescriptor.GetComponentSocketName()).GetLocation();
 		}
 		else
 		{
-			WorldLocation = IndicatorDescriptor.GetWorldPosition();
+			WorldLocation = Component->GetComponentLocation();
 		}
 
-
 		const FVector ProjectWorldLocation = WorldLocation.GetValue() + IndicatorDescriptor.GetWorldPositionOffset();
-
+		const EActorCanvasProjectionMode ProjectionMode = IndicatorDescriptor.GetProjectionMode();
 		
 		switch (ProjectionMode)
 		{
-			case EActorCanvasProjectionMode::WorldPoint:
 			case EActorCanvasProjectionMode::ComponentPoint:
 			{
 				if (WorldLocation.IsSet())

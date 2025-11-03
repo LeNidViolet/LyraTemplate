@@ -11,12 +11,12 @@ EBlueprintExposedNetMode ULyraActorUtilities::SwitchOnNetMode(const UObject* Wor
 	ENetMode NetMode = NM_Standalone;
 	for (const UObject* TestObject = WorldContextObject; TestObject != nullptr; TestObject = TestObject->GetOuter())
 	{
-		if (const UActorComponent* Component = Cast<const UActorComponent>(WorldContextObject))
+		if (const UActorComponent* Component = Cast<const UActorComponent>(TestObject))
 		{
 			NetMode = Component->GetNetMode();
 			break;
 		}
-		else if (const AActor* Actor = Cast<const AActor>(WorldContextObject))
+		else if (const AActor* Actor = Cast<const AActor>(TestObject))
 		{
 			NetMode = Actor->GetNetMode();
 			break;

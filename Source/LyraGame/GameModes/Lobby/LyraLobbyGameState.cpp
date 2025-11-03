@@ -20,15 +20,19 @@ void ALyraLobbyGameState::Multicast_BroadcastMessage_Implementation(const FStrin
 		return;
 	}
 
-	if (UGameplayMessageSubsystem::HasInstance(this))
+	if (UGameInstance* GameInstance = GetGameInstance())
 	{
 		FLyraToastMessage message;
 		message.StringValue = Message;
 
-		UGameplayMessageSubsystem::Get(this).BroadcastMessage(
-			LyraGameplayTags::ToastMessage_Lobby_MemberEvent,
-			message
-			);
+		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
+		if (MessageSubsystem)
+		{
+			MessageSubsystem->BroadcastMessage(
+				LyraGameplayTags::ToastMessage_Lobby_MemberEvent,
+				message
+				);
+		}
 	}
 }
 
@@ -45,14 +49,18 @@ void ALyraLobbyGameState::Multicast_BroadcastCountdown_Implementation(int32 Coun
 		return;
 	}
 
-	if (UGameplayMessageSubsystem::HasInstance(this))
+	if (UGameInstance* GameInstance = GetGameInstance())
 	{
 		FLyraToastMessage message;
 		message.NumberValue = CountdownValue;
 
-		UGameplayMessageSubsystem::Get(this).BroadcastMessage(
+		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
+		if (MessageSubsystem)
+		{
+			MessageSubsystem->BroadcastMessage(
 			LyraGameplayTags::ToastMessage_Lobby_Countdown,
 			message
 			);
+		}
 	}
 }

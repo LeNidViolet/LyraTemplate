@@ -3,146 +3,89 @@
 
 #include "LyraGameplayAbility_Marker.h"
 
-#include "Blueprint/UserWidget.h"
-#include "GameFramework/PlayerState.h"
-#include "Player/LyraPlayerController.h"
-#include "Interaction/IInteractableMarker.h"
+#include "Character/LyraCharacter.h"
+#include "Interaction/LyraWorldMarker.h"
+#include "TargetData/LyraGameplayAbilityTargetData_Marker.h"
 #include "UI/IndicatorSystem/LyraMarkerManagerComponent.h"
 
 
-ULyraGameplayAbility_Marker::ULyraGameplayAbility_Marker(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+void ULyraGameplayAbility_Marker::MakeTargetData(const FGameplayTag& ApplicationTag)
 {
-	ActivationPolicy = ELyraAbilityActivationPolicy::OnSpawn;
-	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
-	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
-}
+	check(IsLocallyControlled());
 
-void ULyraGameplayAbility_Marker::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
-	const FGameplayEventData* TriggerEventData)
-{
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+	AController* Controller = GetControllerFromActorInfo();
+	check(Controller);
 
-	if (ActorInfo && ActorInfo->IsLocallyControlled())
+	ULyraMarkerManagerComponent* MarkerManagerComponent = ULyraMarkerManagerComponent::GetComponent(Controller);
+	check(MarkerManagerComponent);
+
+
+	// 检查一下是否瞄准了存在的标记点
+	FLyraGameplayAbilityTargetData_Marker* TargetData = new FLyraGameplayAbilityTargetData_Marker();
+	TargetData->bHasAimingMarker = MarkerManagerComponent->IsAimingAtMarker();
+	if (TargetData->bHasAimingMarker)
 	{
-		UWorld* World = GetWorld();
-		World->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::ToggleMarkerPromptVisbility, CancelScanRate, true);
-	}
-}
-
-bool ULyraGameplayAbility_Marker::CanActivateAbility(const FGameplayAbilitySpecHandle Handle,
-                                                     const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags,
-                                                     const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
-{
-	return Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
-}
-
-void ULyraGameplayAbility_Marker::EndAbility(const FGameplayAbilitySpecHandle Handle,
-	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
-	bool bReplicateEndAbility, bool bWasCancelled)
-{
-	if (ActorInfo && ActorInfo->IsLocallyControlled())
-	{
-		if (UWorld* World = GetWorld())
+		ALyraWorldMarker* MarkerActor = MarkerManagerComponent->GetAimingMarkerActor();
+		if (IsValid(MarkerActor))
 		{
-			World->GetTimerManager().ClearTimer(TimerHandle);
+			TargetData->AimingMarkerId = MarkerActor->GetMarkerId();
 		}
-	}
-
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-}
-
-bool ULyraGameplayAbility_Marker::IsAimingAtMarker() const
-{
-	return bLastPromptVisible;
-}
-
-UIndicatorDescriptor* ULyraGameplayAbility_Marker::GetAimingMarker() const
-{
-	if (IsAimingAtMarker() && LocalPlayerMarkerInstance.IsValid() && LocalPlayerMarkerInstance->DescriptorObject.IsValid())
-	{
-		return LocalPlayerMarkerInstance->DescriptorObject.Get();
-	}
-	return nullptr;
-}
-
-FGuid ULyraGameplayAbility_Marker::GetLocalPlayerMarkerId(bool& bSuccess)
-{
-	if (!LocalPlayerMarkerInstance.IsValid() || !LocalPlayerMarkerInstance->DescriptorObject.IsValid())
-	{
-		ALyraPlayerController* PlayerController = GetLyraPlayerControllerFromActorInfo();
-		if (PlayerController)
-		{
-			ULyraMarkerManagerComponent* MarkerComponent = ULyraMarkerManagerComponent::GetComponent(PlayerController);
-			if (MarkerComponent)
-			{
-				LocalPlayerMarkerInstance = MarkerComponent->GetMarkerInstance(PlayerController->GetPlayerState<APlayerState>());
-			}
-		}
-	}
-
-	if (LocalPlayerMarkerInstance.IsValid() && LocalPlayerMarkerInstance->DescriptorObject.IsValid())
-	{
-		bSuccess = true;
-		return LocalPlayerMarkerInstance->MarkerId;
-	}
-	bSuccess = false;
-	return FGuid();
-}
-
-void ULyraGameplayAbility_Marker::ShowOrHideMarkerPrompt(const TSharedPtr<FLyraMarkerInstance>& Entry, bool bShow)
-{
-	if (!Entry.IsValid()) return;
-
-	TWeakObjectPtr<UUserWidget> Widget = Entry->DescriptorObject->IndicatorWidget;
-	if (!Widget.IsValid()) return;
-
-	if (Widget->GetClass()->ImplementsInterface(UInteractableMarker::StaticClass()))
-	{
-		if (bShow)
-			IInteractableMarker::Execute_OnShowMarkerInteractablePrompt(Widget.Get(), Entry->DescriptorObject.Get());
 		else
-			IInteractableMarker::Execute_OnHideMarkerInteractablePrompt(Widget.Get(), Entry->DescriptorObject.Get());
-	}
-}
-
-void ULyraGameplayAbility_Marker::ToggleMarkerPromptVisbility()
-{
-	ALyraPlayerController* PlayerController = GetLyraPlayerControllerFromActorInfo();
-	if (PlayerController)
-	{
-		ULyraMarkerManagerComponent* MarkerComponent = ULyraMarkerManagerComponent::GetComponent(PlayerController);
-		if (MarkerComponent)
 		{
-			if (!LocalPlayerMarkerInstance.IsValid() || !LocalPlayerMarkerInstance->DescriptorObject.IsValid())
+			TargetData->bHasAimingMarker = false;
+		}
+	}
+
+	// 如果没有瞄准标记点, 则准备添加标记点的数据
+	if (!TargetData->bHasAimingMarker)
+	{
+		const float TraceRange = 50000.0f;
+
+		ALyraCharacter* Character = GetLyraCharacterFromActorInfo();
+		check(Character);
+
+		FVector CameraLocation;
+		FRotator CameraRotation;
+		// 获取当前玩家的视角位置和旋转
+		Controller->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
+		// 射线从摄像机位置开始
+		FVector TraceStart = CameraLocation;
+		// 射线的方向是摄像机的朝向
+		FVector Forward = CameraRotation.Vector();
+		// 计算射线的结束位置
+		FVector TraceEnd = TraceStart + Forward * TraceRange;
+
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(Character);
+		QueryParams.bTraceComplex = false;
+
+		FHitResult HitResult;
+		bool bHit = GetWorld()->LineTraceSingleByChannel(
+			HitResult,
+			TraceStart,
+			TraceEnd,
+			ECC_Visibility,
+			QueryParams
+			);
+
+		if (bHit)
+		{
+			AActor* HitActor = HitResult.GetActor();
+			if (HitActor)
 			{
-				LocalPlayerMarkerInstance = MarkerComponent->GetMarkerInstance(PlayerController->GetPlayerState<APlayerState>());
+				TargetData->TargetActor = HitActor;
+				TargetData->TargetLocation = HitResult.Location;
 			}
-
-			if (LocalPlayerMarkerInstance.IsValid() && LocalPlayerMarkerInstance->DescriptorObject.IsValid())
+			else
 			{
-				int32 ViewportX, ViewportY;
-				PlayerController->GetViewportSize(ViewportX, ViewportY);
-				FVector2D ScreenCenter(ViewportX * 0.5f, ViewportY * 0.5f);
-
-				FVector2D MarkerScreenPos;
-				PlayerController->ProjectWorldLocationToScreen(LocalPlayerMarkerInstance->Location, MarkerScreenPos);
-				const float PixelDistance = FVector2D::Distance(MarkerScreenPos, ScreenCenter);
-
-				bool bShouldShowPrompt = PixelDistance <= CancelRadius;
-				bool bNewObject = LastDescriptorObject != LocalPlayerMarkerInstance->DescriptorObject;
-
-				if ((bShouldShowPrompt != bLastPromptVisible) || bNewObject)
-				{
-					if (bNewObject)
-					{
-						LastDescriptorObject = LocalPlayerMarkerInstance->DescriptorObject;
-					}
-					ShowOrHideMarkerPrompt(LocalPlayerMarkerInstance, bShouldShowPrompt);
-					bLastPromptVisible = bShouldShowPrompt;
-				}
+				TargetData->TargetActor = nullptr;
+				TargetData->TargetLocation = FVector(0, 0, 0);
 			}
 		}
 	}
+
+	const FGameplayAbilityTargetDataHandle TargetDataHandle(TargetData);
+
+	NotifyTargetDataReady(TargetDataHandle, ApplicationTag);
 }

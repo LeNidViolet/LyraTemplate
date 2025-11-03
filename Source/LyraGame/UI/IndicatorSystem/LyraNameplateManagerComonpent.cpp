@@ -122,9 +122,9 @@ void ULyraNameplateManagerComonpent::Deinitialize()
 
 	for (const FNameplateCreatedEntry& NameplateEntry  : NameplateList)
 	{
-		if (NameplateEntry.DescriptorObject.IsValid())
+		if (NameplateEntry.IndicatorDescriptor.IsValid())
 		{
-			NameplateEntry.DescriptorObject.Get()->UnregisterIndicator();
+			NameplateEntry.IndicatorDescriptor.Get()->UnregisterIndicator();
 		}
 	}
 	NameplateList.Empty();
@@ -153,7 +153,7 @@ void ULyraNameplateManagerComonpent::HandleAddNameplateEvent(
 	FNameplateCreatedEntry NameplateEntry;
 	NameplateEntry.Pawn = Parameters.Pawn;
 	NameplateEntry.DescriptorClass = Parameters.DescriptorClass;
-	NameplateEntry.DescriptorObject = Descriptor;
+	NameplateEntry.IndicatorDescriptor = Descriptor;
 	NameplateList.Add(NameplateEntry);
 
 	AController* Controller = Cast<AController>(GetOwner());
@@ -178,10 +178,10 @@ void ULyraNameplateManagerComonpent::HandleRemoveNameplateEvent(
 	{
 		const FNameplateCreatedEntry& NameplateEntry = NameplateList[i];
 
-		if (NameplateEntry.DescriptorObject.IsValid() &&
+		if (NameplateEntry.IndicatorDescriptor.IsValid() &&
 			Parameters.Pawn == NameplateEntry.Pawn)
 		{
-			NameplateEntry.DescriptorObject.Get()->UnregisterIndicator();
+			NameplateEntry.IndicatorDescriptor.Get()->UnregisterIndicator();
 			NameplateList.RemoveAt(i);
 			break;
 		}

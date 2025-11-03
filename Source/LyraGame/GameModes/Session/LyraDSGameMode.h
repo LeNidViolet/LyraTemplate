@@ -13,22 +13,6 @@ class ALyraDSPlayerController;
 struct FServerRequestPlaceMarkerParameters;
 struct FServerRequestRemoveMarkerParameters;
 
-USTRUCT()
-struct FPlayerMarkerData
-{
-	GENERATED_BODY()
-
-	UPROPERTY()
-	TObjectPtr<ALyraDSPlayerState> MarkerOwner;
-
-	UPROPERTY()
-	FVector MarkerLocation = FVector::Zero();
-
-	UPROPERTY()
-	FGuid MarkerId;
-};
-
-
 UCLASS(MinimalAPI)
 class ALyraDSGameMode : public ALyraGameMode
 {
@@ -42,16 +26,10 @@ public:
 
 	UE_API virtual void BeginPlay() override;
 
-	UE_API virtual void ProcessServerRequestPlaceMarker(ALyraDSPlayerController* PlayerController, const FServerRequestPlaceMarkerParameters& Parameters);
-	UE_API virtual void ProcessServerRequestRemoveMarker(ALyraDSPlayerController* PlayerController, const FServerRequestRemoveMarkerParameters& Parameters);
-
 private:
 
 	TArray<FColor> AvailablePlayerColors;
 	int32 NextColorIndex = 0;
-
-
-	TArray<TSharedPtr<FPlayerMarkerData>> PlayerMarkers;
 };
 
 #undef UE_API

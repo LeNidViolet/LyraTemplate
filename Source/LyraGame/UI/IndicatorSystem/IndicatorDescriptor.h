@@ -9,6 +9,7 @@
 
 #define UE_API LYRAGAME_API
 
+class ALyraWorldMarker;
 class SWidget;
 class UIndicatorDescriptor;
 class ULyraIndicatorManagerComponent;
@@ -24,7 +25,6 @@ struct FIndicatorProjection
 UENUM(BlueprintType)
 enum class EActorCanvasProjectionMode : uint8
 {
-	WorldPoint,
 	ComponentPoint,
 	ComponentBoundingBox,
 	ComponentScreenBoundingBox,
@@ -56,11 +56,6 @@ public:
 	void SetSceneComponent(USceneComponent* InComponent) { Component = InComponent; }
 
 	UFUNCTION(BlueprintCallable)
-	AActor* GetActor() const { return Actor; }
-	UFUNCTION(BlueprintCallable)
-	void SetActor(AActor* InActor) { Actor = InActor; }
-
-	UFUNCTION(BlueprintCallable)
 	FName GetComponentSocketName() const { return ComponentSocketName; }
 	UFUNCTION(BlueprintCallable)
 	void SetComponentSocketName(FName SocketName) { ComponentSocketName = SocketName; }
@@ -88,7 +83,7 @@ public:
 
 	bool CanAutomaticallyRemove() const
 	{
-		return bAutoRemoveWhenIndicatorComponentIsNull && (!IsValid(GetSceneComponent()) && !IsValid(GetActor()));
+		return bAutoRemoveWhenIndicatorComponentIsNull && !IsValid(GetSceneComponent());
 	}
 
 public:
@@ -96,7 +91,7 @@ public:
 	//=======================
 
 	UFUNCTION(BlueprintCallable)
-	bool GetIsVisible() const { return (IsValid(GetSceneComponent()) || IsValid(GetActor())) && bVisible; }
+	bool GetIsVisible() const { return IsValid(GetSceneComponent()) && bVisible; }
 	
 	UFUNCTION(BlueprintCallable)
 	void SetDesiredVisibility(bool InVisible)
@@ -174,14 +169,6 @@ public:
 		BoundingBoxAnchor = InBoundingBoxAnchor;
 	}
 
-	UFUNCTION(BlueprintCallable)
-	FVector GetWorldPosition() const { return WorldPosition; }
-	UFUNCTION(BlueprintCallable)
-	void SetWorldPosition(FVector InWorldPosition)
-	{
-		WorldPosition = InWorldPosition;
-	}
-
 public:
 	// Sorting Properties
 	//=======================
@@ -202,6 +189,11 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	UE_API void UnregisterIndicator();
+
+	// 创建完标记点之后会调用到此函数进行多态处理
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Indicator Descriptor")
+	UE_API void LayoutIndicator(ALyraWorldMarker* MarkerActor);
+	virtual void LayoutIndicator_Implementation(ALyraWorldMarker* MarkerActor){};
 
 protected:
 
@@ -251,10 +243,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
 	FName ComponentSocketName = NAME_None;
-
-	// The position for the indicator in world space. (when EActorCanvasProjectionMode WorldPoint)
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Indicator Descriptor")
-	FVector WorldPosition = FVector(0, 0, 0);
 
 private:
 	friend class SActorCanvas;
