@@ -25,4 +25,7 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category="WorldMarker")
 	void OnHideMarkerInteractablePrompt(UIndicatorDescriptor* Descriptor);
+
+	UFUNCTION(BlueprintImplementableEvent, Category="WorldMarker")
+	FVector2D OnGetWidgetPixelSize();
 };

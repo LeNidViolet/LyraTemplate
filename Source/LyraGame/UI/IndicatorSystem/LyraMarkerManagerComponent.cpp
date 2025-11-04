@@ -333,7 +333,8 @@ void ULyraMarkerManagerComponent::ToggleMarkerPromptVisbility()
 
 			if (!IsValid(MarkerActor) || !IsValid(IndicatorDescriptor)) continue;
 
-			// 得到标记点投影在屏幕上的位置
+
+			// 得到标记点中心投影在屏幕上的位置
 			FVector2D MarkerScreenPos;
 			bool bIsOnScreen = PlayerController->ProjectWorldLocationToScreen(
 				MarkerActor->GetActorLocation(),
@@ -341,7 +342,30 @@ void ULyraMarkerManagerComponent::ToggleMarkerPromptVisbility()
 				true);
 			if (!bIsOnScreen) continue;
 
-			const float PixelDistance = FVector2D::Distance(MarkerScreenPos, ScreenCenter);
+			// 探测 Widget 大小, 用来更准确的定位
+			TWeakObjectPtr<UUserWidget> Widget = IndicatorDescriptor->IndicatorWidget;
+			if (!Widget.IsValid()) continue;
+			if (!Widget->GetClass()->ImplementsInterface(UInteractableMarker::StaticClass())) continue;
+			FVector2D WidgetSize = IInteractableMarker::Execute_OnGetWidgetPixelSize(Widget.Get());
+			if (WidgetSize.X == 0 || WidgetSize.Y == 0) continue;
+
+			FVector2D HalfSize = WidgetSize / 2.0f;
+
+			// 定义 Widget 在屏幕上的矩形 (FBox2D)
+			FVector2D MinBounds = MarkerScreenPos - HalfSize;
+			FVector2D MaxBounds = MarkerScreenPos + HalfSize;
+
+			// 计算屏幕中心点 (ScreenCenter) 到这个矩形的最短距离
+			FVector2D ClosestPointInBox;
+
+			// Clamp X 轴：将 ScreenCenter.X 限制在 [MinBounds.X, MaxBounds.X] 之间
+			ClosestPointInBox.X = FMath::Clamp(ScreenCenter.X, MinBounds.X, MaxBounds.X);
+			// Clamp Y 轴：将 ScreenCenter.Y 限制在 [MinBounds.Y, MaxBounds.Y] 之间
+			ClosestPointInBox.Y = FMath::Clamp(ScreenCenter.Y, MinBounds.Y, MaxBounds.Y);
+
+			// 3. 计算实际的像素距离
+			const float PixelDistance = FVector2D::Distance(ScreenCenter, ClosestPointInBox);
+			// const float PixelDistance = FVector2D::Distance(MarkerScreenPos, ScreenCenter);
 
 			// 选择最接近屏幕中心的标记点
 			if (PixelDistance <= ClosestDistance)
