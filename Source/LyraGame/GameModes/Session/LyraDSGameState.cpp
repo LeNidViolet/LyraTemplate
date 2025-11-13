@@ -8,6 +8,7 @@
 #include "Messages/LyraNotificationMessage.h"
 #include "Messages/LyraNotificationMessage_Participant.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LyraDSGameState)
 
 //=============================================================================
 // ALyraDSGameState

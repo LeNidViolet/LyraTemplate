@@ -10,8 +10,9 @@
 #include "Components/CapsuleComponent.h"
 #include "Messages/LyraNotificationMessage_Nameplate.h"
 #include "Player/LyraPlayerController.h"
+#include "System/LyraGameData.h"
 
-
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LyraNameplateManagerComonpent)
 
 // Sets default values for this component's properties
 ULyraNameplateManagerComonpent::ULyraNameplateManagerComonpent(const FObjectInitializer& ObjectInitializer)
@@ -20,18 +21,11 @@ ULyraNameplateManagerComonpent::ULyraNameplateManagerComonpent(const FObjectInit
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
-
-	// ...
 }
 
-ULyraNameplateManagerComonpent* ULyraNameplateManagerComonpent::GetComponent(AController* Controller)
+ULyraNameplateManagerComonpent* ULyraNameplateManagerComonpent::GetComponent(const AController* Controller)
 {
-	if (Controller)
-	{
-		return Controller->FindComponentByClass<ULyraNameplateManagerComonpent>();
-	}
-
-	return nullptr;
+	return Controller ? Controller->FindComponentByClass<ULyraNameplateManagerComonpent>() : nullptr;
 }
 
 
@@ -45,10 +39,8 @@ void ULyraNameplateManagerComonpent::BeginPlay()
 	{
 		if (PC->IsLocalPlayerController())
 		{
-			if (Initialize())
-			{
-				return ;
-			}
+			RegisterMessageHandlers();
+			return ;
 		}
 	}
 
@@ -62,64 +54,11 @@ void ULyraNameplateManagerComonpent::EndPlay(const EEndPlayReason::Type EndPlayR
 	{
 		if (PC->IsLocalPlayerController())
 		{
-			Deinitialize();
-			return ;
-		}
-	}
-	Super::EndPlay(EndPlayReason);
-}
-
-
-bool ULyraNameplateManagerComonpent::Initialize()
-{
-	bool Result = false;
-
-	UGameInstance* GameInstance = GetOwner()->GetGameInstance();
-	if (GameInstance)
-	{
-		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
-		if (MessageSubsystem)
-		{
-			NameplateAddEventListener = MessageSubsystem->RegisterListener<FOnAddNameplateParameters>(
-				LyraGameplayTags::Gameplay_Message_Nameplate_Add,
-				this,
-				&ThisClass::HandleAddNameplateEvent);
-
-			NameplateRemoveEventListener = MessageSubsystem->RegisterListener<FOnRemoveNameplateParameters>(
-			LyraGameplayTags::Gameplay_Message_Nameplate_Remove,
-				this,
-				&ThisClass::HandleRemoveNameplateEvent);
-
-			FClientRequestNameplateParameters NameplateRequest;
-			NameplateRequest.NameplateManagerComonpent = this;
-			MessageSubsystem->BroadcastMessage(LyraGameplayTags::Gameplay_Message_Nameplate_Discover, NameplateRequest);
-
-			Result = true;
+			UnregisterMessageHandlers();
 		}
 	}
 
-	return Result;
-}
-
-void ULyraNameplateManagerComonpent::Deinitialize()
-{
-	UGameInstance* GameInstance = GetOwner()->GetGameInstance();
-	if (GameInstance)
-	{
-		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
-		if (MessageSubsystem)
-		{
-			if (NameplateAddEventListener.IsValid())
-			{
-				MessageSubsystem->UnregisterListener(NameplateAddEventListener);
-			}
-			if (NameplateRemoveEventListener.IsValid())
-			{
-				MessageSubsystem->UnregisterListener(NameplateRemoveEventListener);
-			}
-		}
-	}
-
+	// 注销清理所有Nameplate对象
 	for (const FNameplateCreatedEntry& NameplateEntry  : NameplateList)
 	{
 		if (NameplateEntry.IndicatorDescriptor.IsValid())
@@ -128,15 +67,20 @@ void ULyraNameplateManagerComonpent::Deinitialize()
 		}
 	}
 	NameplateList.Empty();
+
+	Super::EndPlay(EndPlayReason);
 }
 
-void ULyraNameplateManagerComonpent::HandleAddNameplateEvent(
+
+void ULyraNameplateManagerComonpent::HandleNameplateAddEvent(
 	FGameplayTag Channel,
-	const FOnAddNameplateParameters& Parameters)
+	const FOnNameplateAddParameters& Parameters)
 {
 	// Register Nameplate Source
 
-	UIndicatorDescriptor* Descriptor = NewObject<UIndicatorDescriptor>(this, Parameters.DescriptorClass);
+	TSubclassOf<UIndicatorDescriptor> IndicatorClass = ULyraGameData::Get().NameplateIndicatorClass;
+
+	UIndicatorDescriptor* Descriptor = NewObject<UIndicatorDescriptor>(this, IndicatorClass);
 	ACharacter* Character = Cast<ACharacter>(Parameters.Pawn);
 	if (Character)
 	{
@@ -152,7 +96,6 @@ void ULyraNameplateManagerComonpent::HandleAddNameplateEvent(
 
 	FNameplateCreatedEntry NameplateEntry;
 	NameplateEntry.Pawn = Parameters.Pawn;
-	NameplateEntry.DescriptorClass = Parameters.DescriptorClass;
 	NameplateEntry.IndicatorDescriptor = Descriptor;
 	NameplateList.Add(NameplateEntry);
 
@@ -168,9 +111,9 @@ void ULyraNameplateManagerComonpent::HandleAddNameplateEvent(
 }
 
 
-void ULyraNameplateManagerComonpent::HandleRemoveNameplateEvent(
+void ULyraNameplateManagerComonpent::HandleNameplateRemoveEvent(
 	FGameplayTag Channel,
-	const FOnRemoveNameplateParameters& Parameters)
+	const FOnNameplateRemoveParameters& Parameters)
 {
 	// Unregister Nameplate Source
 
@@ -185,6 +128,49 @@ void ULyraNameplateManagerComonpent::HandleRemoveNameplateEvent(
 			NameplateList.RemoveAt(i);
 			break;
 		}
+	}
+}
+
+void ULyraNameplateManagerComonpent::RegisterMessageHandlers()
+{
+	UGameInstance* GameInstance = GetGameInstance<UGameInstance>();
+	if (GameInstance)
+	{
+		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
+		if (MessageSubsystem)
+		{
+			if (!NameplateAddEventListener.IsValid())
+			{
+				NameplateAddEventListener = MessageSubsystem->RegisterListener<FOnNameplateAddParameters>(
+					LyraGameplayTags::Gameplay_Message_Nameplate_Add,
+					this,
+					&ThisClass::HandleNameplateAddEvent);
+			}
+			if (!NameplateRemoveEventListener.IsValid())
+			{
+				NameplateRemoveEventListener = MessageSubsystem->RegisterListener<FOnNameplateRemoveParameters>(
+					LyraGameplayTags::Gameplay_Message_Nameplate_Remove,
+					this,
+					&ThisClass::HandleNameplateRemoveEvent);
+			}
+
+			// 请求局内的 Nameplate Source Component 回复 Nameplate Add 消息
+			FOnNameplateDiscoverParameters NameplateRequest;
+			NameplateRequest.NameplateManagerComonpent = this;
+			MessageSubsystem->BroadcastMessage(LyraGameplayTags::Gameplay_Message_Nameplate_Discover, NameplateRequest);
+		}
+	}
+}
+
+void ULyraNameplateManagerComonpent::UnregisterMessageHandlers()
+{
+	if (NameplateAddEventListener.IsValid())
+	{
+		NameplateAddEventListener.Unregister();
+	}
+	if (NameplateRemoveEventListener.IsValid())
+	{
+		NameplateRemoveEventListener.Unregister();
 	}
 }
 

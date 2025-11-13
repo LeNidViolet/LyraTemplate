@@ -12,8 +12,8 @@
 #define UE_API LYRAGAME_API
 
 
-struct FOnRemoveNameplateParameters;
-struct FOnAddNameplateParameters;
+struct FOnNameplateRemoveParameters;
+struct FOnNameplateAddParameters;
 class ULyraNameplateManagerComonpent;
 
 USTRUCT()
@@ -23,8 +23,6 @@ struct FNameplateCreatedEntry
 
 	UPROPERTY()
 	TObjectPtr<APawn> Pawn;
-	UPROPERTY()
-	TSubclassOf<UIndicatorDescriptor> DescriptorClass;
 	UPROPERTY()
 	TWeakObjectPtr<UIndicatorDescriptor> IndicatorDescriptor;
 };
@@ -39,21 +37,22 @@ public:
 	// Sets default values for this component's properties
 	UE_API ULyraNameplateManagerComonpent(const FObjectInitializer& ObjectInitializer);
 
-	static UE_API ULyraNameplateManagerComonpent* GetComponent(AController* Controller);
+	UFUNCTION(BlueprintPure, Category = "Component")
+	static UE_API ULyraNameplateManagerComonpent* GetComponent(const AController* Controller);
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
-	bool Initialize();
-	void Deinitialize();
+	void RegisterMessageHandlers();
+	void UnregisterMessageHandlers();
 
 	FGameplayMessageListenerHandle NameplateAddEventListener;
-	void HandleAddNameplateEvent(FGameplayTag Channel, const FOnAddNameplateParameters& Parameters);
+	void HandleNameplateAddEvent(FGameplayTag Channel, const FOnNameplateAddParameters& Parameters);
 
 	FGameplayMessageListenerHandle NameplateRemoveEventListener;
-	void HandleRemoveNameplateEvent(FGameplayTag Channel, const FOnRemoveNameplateParameters& Parameters);
+	void HandleNameplateRemoveEvent(FGameplayTag Channel, const FOnNameplateRemoveParameters& Parameters);
 
 	TArray<FNameplateCreatedEntry> NameplateList;
 };

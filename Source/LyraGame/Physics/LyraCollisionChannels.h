@@ -22,3 +22,5 @@
 
 // Allocated to aim assist by the ShooterCore game feature
 // ECC_GameTraceChannel5
+
+#define Lyra_TraceChannel_Ground						ECC_GameTraceChannel6

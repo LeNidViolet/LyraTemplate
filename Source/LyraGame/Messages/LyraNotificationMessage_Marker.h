@@ -6,19 +6,25 @@
 class ALyraWorldMarker;
 
 USTRUCT(BlueprintType)
-struct FOnAddMarkerParameters
+struct FOnMarkerAddParameters
 {
 	GENERATED_BODY()
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<ALyraWorldMarker> MarkerActor;
 };
 
 USTRUCT(BlueprintType)
-struct FOnRemoveMarkerParameters
+struct FOnMarkerRemoveParameters
 {
 	GENERATED_BODY()
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 MarkerId = -1;
+};
+
+USTRUCT(BlueprintType)
+struct FOnMarkerDiscoverParameters
+{
+	GENERATED_BODY()
 };

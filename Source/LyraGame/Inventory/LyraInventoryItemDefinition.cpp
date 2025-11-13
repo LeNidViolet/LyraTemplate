@@ -31,15 +31,12 @@ const ULyraInventoryItemFragment* ULyraInventoryItemDefinition::FindFragmentByCl
 	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////
-// ULyraInventoryItemDefinition
-
-const ULyraInventoryItemFragment* ULyraInventoryFunctionLibrary::FindItemDefinitionFragment(TSubclassOf<ULyraInventoryItemDefinition> ItemDef, TSubclassOf<ULyraInventoryItemFragment> FragmentClass)
+void ULyraInventoryItemDefinition::PostInitProperties()
 {
-	if ((ItemDef != nullptr) && (FragmentClass != nullptr))
-	{
-		return GetDefault<ULyraInventoryItemDefinition>(ItemDef)->FindFragmentByClass(FragmentClass);
-	}
-	return nullptr;
-}
+	// 进行一些必要的数据修正
 
+	if (!bAllowStacking) MaxStackCount = 1;
+	else if (MaxStackCount < 1) MaxStackCount = 1;
+
+	Super::PostInitProperties();
+}

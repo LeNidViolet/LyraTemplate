@@ -40,6 +40,26 @@ void UAsyncAction_GetLobbyBasicInfo::Activate()
 
 void UAsyncAction_GetLobbyBasicInfo::Execute_GetLobbyBasicInfo()
 {
+	if (!WorldContextObject.IsValid() || !Player.IsValid())
+	{
+		auto HandleFailure = [this]()
+		{
+			OnFailure.Broadcast(FLobbyBasicInfo());
+			SetReadyToDestroy();
+		};
+
+		if (UWorld* World = GEngine ? GEngine->GetCurrentPlayWorld() : nullptr)
+		{
+			World->GetTimerManager().SetTimerForNextTick(
+				FTimerDelegate::CreateLambda(HandleFailure));
+		}
+		else
+		{
+			HandleFailure();
+		}
+		return;
+	}
+
 	if (const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld()))
 	{
 		if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
@@ -55,6 +75,7 @@ void UAsyncAction_GetLobbyBasicInfo::Execute_GetLobbyBasicInfo()
 
 					FOnSingleSessionResultCompleteDelegate Delegate = FOnSingleSessionResultCompleteDelegate::CreateUObject(this, &ThisClass::OnSingleSessionResultComplete);
 					SessionPtr->FindSessionById(*UserId, *LobbyNetId, *EmptyId, Delegate);
+					bIsSearching = true;
 
 					return ;
 				}
@@ -82,32 +103,63 @@ void UAsyncAction_GetLobbyBasicInfo::Execute_GetLobbyBasicInfo()
 void UAsyncAction_GetLobbyBasicInfo::OnSingleSessionResultComplete(int32 LocalUserNum, bool bWasSuccessful,
 	const FOnlineSessionSearchResult& SearchResult)
 {
-	if (bWasSuccessful && SearchResult.IsValid())
+	bIsSearching = false;
+
+	if (!WorldContextObject.IsValid() || bIsCancelled)
 	{
-		FLobbyBasicInfo Result;
-		Result.LobbyId = SearchResult.GetSessionIdStr();
-		if (SearchResult.Session.OwningUserId.IsValid())
-		{
-			Result.OwnerId = SearchResult.Session.OwningUserId->ToString();
-		}
-		Result.PingInMs = SearchResult.PingInMs;
-		Result.NumPublicConnections = SearchResult.Session.SessionSettings.NumPublicConnections;
-		Result.NumOpenPublicConnections = SearchResult.Session.NumOpenPublicConnections;
-
-		for (const TTuple<FName, FOnlineSessionSetting>& Setting : SearchResult.Session.SessionSettings.Settings)
-		{
-			if (ExposeAttributes.Contains(Setting.Key.ToString()))
-			{
-				FEIKAttribute Attribute(Setting.Value.Data);
-				Result.Attributes.Add(Setting.Key, Attribute);
-			}
-		}
-
-		OnSuccess.Broadcast(Result);
+		OnFailure.Broadcast(FLobbyBasicInfo());
 		SetReadyToDestroy();
-		return ;
+		return;
 	}
 
-	OnFailure.Broadcast(FLobbyBasicInfo());
+	if (!bIsCancelled)
+	{
+		if (bWasSuccessful && SearchResult.IsValid())
+		{
+			FLobbyBasicInfo Result;
+			Result.LobbyId = SearchResult.GetSessionIdStr();
+			if (SearchResult.Session.OwningUserId.IsValid())
+			{
+				Result.OwnerId = SearchResult.Session.OwningUserId->ToString();
+			}
+			Result.PingInMs = SearchResult.PingInMs;
+			Result.NumPublicConnections = SearchResult.Session.SessionSettings.NumPublicConnections;
+			Result.NumOpenPublicConnections = SearchResult.Session.NumOpenPublicConnections;
+
+			for (const TTuple<FName, FOnlineSessionSetting>& Setting : SearchResult.Session.SessionSettings.Settings)
+			{
+				if (ExposeAttributes.Contains(Setting.Key.ToString()))
+				{
+					FEIKAttribute Attribute(Setting.Value.Data);
+					Result.Attributes.Add(Setting.Key, Attribute);
+				}
+			}
+
+			OnSuccess.Broadcast(Result);
+		}
+		else
+		{
+			OnFailure.Broadcast(FLobbyBasicInfo());
+		}
+	}
+
 	SetReadyToDestroy();
+}
+
+void UAsyncAction_GetLobbyBasicInfo::Cancel()
+{
+	bIsCancelled = true;
+
+	if (bIsSearching && WorldContextObject.IsValid())
+	{
+		if (const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld()))
+		{
+			if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
+			{
+				// nothing to cancel in this case
+			}
+		}
+	}
+
+	Super::Cancel();
 }

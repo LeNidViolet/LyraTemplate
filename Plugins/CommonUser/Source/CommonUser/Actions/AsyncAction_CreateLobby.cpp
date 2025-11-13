@@ -20,7 +20,7 @@ UAsyncAction_CreateLobby* UAsyncAction_CreateLobby::CreateLobby(
 	const TMap<FName, FEIKAttribute> MemberSettings,
 	int32 NumberOfPublicConnections)
 {
-	if (!Player || !WorldContextObject || NumberOfPublicConnections <= 0)
+	if (!IsValid(Player) || !IsValid(WorldContextObject) || NumberOfPublicConnections <= 0)
 	{
 		UE_LOG(LogCommonSessionAsyncAction, Error, TEXT("UAsyncAction_CreateLobby::CreateLobby: Invalid parameters"));
 		return nullptr;
@@ -44,6 +44,26 @@ void UAsyncAction_CreateLobby::Activate()
 
 void UAsyncAction_CreateLobby::Execute_CreateLobby()
 {
+	if (!WorldContextObject.IsValid() || !Player.IsValid())
+	{
+		auto HandleFailure = [this]()
+		{
+			OnFailure.Broadcast("");
+			SetReadyToDestroy();
+		};
+
+		if (UWorld* World = GEngine ? GEngine->GetCurrentPlayWorld() : nullptr)
+		{
+			World->GetTimerManager().SetTimerForNextTick(
+				FTimerDelegate::CreateLambda(HandleFailure));
+		}
+		else
+		{
+			HandleFailure();
+		}
+		return;
+	}
+
 	if (const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld()))
 	{
 		if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
@@ -81,6 +101,7 @@ void UAsyncAction_CreateLobby::Execute_CreateLobby()
 				{
 					CreateLobbyDelegateHandle = SessionPtr->OnCreateSessionCompleteDelegates.AddUObject(this, &ThisClass::OnCreateLobbyCompleted);
 					SessionPtr->CreateSession(*UserId, NAME_GameSession, SessionCreationInfo);
+					bIsCreating = true;
 
 					return;
 				}
@@ -108,10 +129,28 @@ void UAsyncAction_CreateLobby::Execute_CreateLobby()
 
 void UAsyncAction_CreateLobby::OnCreateLobbyCompleted(FName SessionName, bool bWasSuccessful)
 {
-	const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld());
-	const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
-	SessionPtr->OnCreateSessionCompleteDelegates.Remove(CreateLobbyDelegateHandle);
+	bIsCreating = false;
 
+	if (!WorldContextObject.IsValid() || bIsCancelled)
+	{
+		OnFailure.Broadcast("");
+		SetReadyToDestroy();
+		return;
+	}
+
+	IOnlineSessionPtr SessionPtr = nullptr;
+	const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld());
+	if (OnlineSubsystem)
+	{
+		SessionPtr = OnlineSubsystem->GetSessionInterface();
+		if (SessionPtr)
+		{
+			SessionPtr->OnCreateSessionCompleteDelegates.Remove(CreateLobbyDelegateHandle);
+		}
+	}
+
+
+	bool bGotSession = false;
 	if (bWasSuccessful)
 	{
 		if (const FOnlineSession* CurrentSession = SessionPtr->GetNamedSession(SessionName))
@@ -130,12 +169,34 @@ void UAsyncAction_CreateLobby::OnCreateLobbyCompleted(FName SessionName, bool bW
 			}
 
 			OnSuccess.Broadcast(CurrentSession->SessionInfo.Get()->GetSessionId().ToString());
-			SetReadyToDestroy();
-
-			return ;
+			bGotSession = true;
 		}
 	}
 
-	OnFailure.Broadcast("");
+	if (!bGotSession)
+	{
+		OnFailure.Broadcast("");
+	}
+
 	SetReadyToDestroy();
+}
+
+void UAsyncAction_CreateLobby::Cancel()
+{
+	bIsCancelled = true;
+
+	if (bIsCreating && WorldContextObject.IsValid())
+	{
+		if (const IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld()))
+		{
+			if (const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
+			{
+				SessionPtr->OnCreateSessionCompleteDelegates.Remove(CreateLobbyDelegateHandle);
+				SessionPtr->DestroySession(NAME_GameSession);	// TODO 这里是否需要 DestroySession ?
+				bIsCreating = false;
+			}
+		}
+	}
+
+	Super::Cancel();
 }

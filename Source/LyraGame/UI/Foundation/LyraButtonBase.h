@@ -31,10 +31,10 @@ protected:
 	void RefreshButtonText();
 	
 	UFUNCTION(BlueprintImplementableEvent)
-	void UpdateButtonText(const FText& InText);
+	void K2_OnUpdateButtonText(const FText& InText);
 
 	UFUNCTION(BlueprintImplementableEvent)
-	void UpdateButtonStyle();
+	void K2_OnUpdateButtonStyle();
 	
 private:
 	UPROPERTY(EditAnywhere, Category="Button", meta=(InlineEditConditionToggle))

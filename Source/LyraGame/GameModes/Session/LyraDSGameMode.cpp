@@ -11,6 +11,8 @@
 #include "GameFramework/PlayerState.h"
 #include "GameModes/LyraExperienceManagerComponent.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LyraDSGameMode)
+
 #define LOCTEXT_NAMESPACE "Lyra"
 
 ALyraDSGameMode::ALyraDSGameMode(const FObjectInitializer& ObjectInitializer)
@@ -33,10 +35,15 @@ void ALyraDSGameMode::PostLogin(APlayerController* NewPlayer)
 	if (HasAuthority())
 	{
 		ALyraDSGameState* GameState = GetGameState<ALyraDSGameState>();
-		check(GameState);
-
 		ALyraDSPlayerState* PlayerState = NewPlayer->GetPlayerState<ALyraDSPlayerState>();
-		check(PlayerState);
+		if (!PlayerState)
+		{
+			UE_LOG(LogLyra, Warning, TEXT("PostLogin: PlayerState is invalid"));
+
+			NewPlayer->ClientReturnToMainMenuWithTextReason(FText::FromString("Invalid PlayerState"));
+			return;
+		}
+
 
 		int32 ColorIndex = NextColorIndex++ % AvailablePlayerColors.Num();
 		FColor AssignedColor = AvailablePlayerColors[ColorIndex];
@@ -69,28 +76,32 @@ void ALyraDSGameMode::Logout(AController* Exiting)
 	if (HasAuthority())
 	{
 		ALyraDSGameState* GameState = GetGameState<ALyraDSGameState>();
-		check(GameState);
-
 		ALyraDSPlayerState* PlayerState = Exiting->GetPlayerState<ALyraDSPlayerState>();
-		check(PlayerState);
-
-		FUniqueNetIdRepl UniqueIdRepl = PlayerState->GetUniqueId();
-		if (UniqueIdRepl.IsValid())
+		if (PlayerState)
 		{
-			const FUniqueNetId& UniqueId = *UniqueIdRepl.GetUniqueNetId();
-			UE_LOG(LogLyra, Log, TEXT("Player %s Logout with ID: %s"),
-				*PlayerState->GetPlayerName(),
-				*UniqueId.ToString())
+			FUniqueNetIdRepl UniqueIdRepl = PlayerState->GetUniqueId();
+			if (UniqueIdRepl.IsValid())
+			{
+				const FUniqueNetId& UniqueId = *UniqueIdRepl.GetUniqueNetId();
+				UE_LOG(LogLyra, Log, TEXT("Player %s Logout with ID: %s"),
+					*PlayerState->GetPlayerName(),
+					*UniqueId.ToString())
+			}
+
+			// 移除该玩家的所有标记点
+			PlayerState->RemoveAllWorldMarkers();
+
+
+			FOnSessionParticipantEventParameters Parameters;
+			Parameters.EventType = EOnSessionParticipantEventType::Left;
+			Parameters.ParticipantName = *PlayerState->GetPlayerName();
+			GameState->Broadcast_SessionParticipantEvent(Parameters);
+		}
+		else
+		{
+			UE_LOG(LogLyra, Warning, TEXT("Logout: PlayerState is invalid"));
 		}
 
-		// 移除该玩家的所有标记点
-		PlayerState->RemoveAllWorldMarkers();
-
-
-		FOnSessionParticipantEventParameters Parameters;
-		Parameters.EventType = EOnSessionParticipantEventType::Left;
-		Parameters.ParticipantName = *PlayerState->GetPlayerName();
-		GameState->Broadcast_SessionParticipantEvent(Parameters);
 	}
 
 	Super::Logout(Exiting);

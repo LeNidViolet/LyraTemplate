@@ -89,7 +89,7 @@ public:
 	UE_API void AttemptPickUpWeapon(APawn* Pawn);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Lyra|WeaponPickup")
-	UE_API bool GiveWeapon(TSubclassOf<ULyraInventoryItemDefinition> WeaponItemClass, APawn* ReceivingPawn);
+	UE_API bool K2_OnGiveWeapon(TSubclassOf<ULyraInventoryItemDefinition> WeaponItemClass, APawn* ReceivingPawn);
 
 	UE_API void StartCoolDown();
 

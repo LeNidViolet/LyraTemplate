@@ -14,6 +14,7 @@
 #include "OnlineSessionSettings.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
+#include "CommonUserSettings.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CommonSessionSubsystem)
 
@@ -1259,9 +1260,10 @@ void UCommonSessionSubsystem::ConnectToHostReservationBeacon()
 
 	FString ConnectInfo;
 	Sessions->GetResolvedConnectString(NAME_GameSession, ConnectInfo, NAME_BeaconPort);
-	if (bLocalHostOverride)
+	const UCommonUserSettings* Settings = GetDefault<UCommonUserSettings>();
+	if (Settings->bOverrideServerAddress)
 	{
-		ConnectInfo = "127.0.0.1:15000";
+		ConnectInfo = Settings->ServerAddressBeacon;
 	}
 
 	IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
@@ -1589,9 +1591,10 @@ void UCommonSessionSubsystem::InternalTravelToSession(const FName SessionName)
 	// Allow modification of the URL prior to travel
 	OnPreClientTravelEvent.Broadcast(URL);
 
-	if (bLocalHostOverride)
+	const UCommonUserSettings* Settings = GetDefault<UCommonUserSettings>();
+	if (Settings->bOverrideServerAddress)
 	{
-		URL = FString("127.0.0.1:7777");
+		URL = Settings->ServerAddress;
 	}
 	PlayerController->ClientTravel(URL, TRAVEL_Absolute);
 }

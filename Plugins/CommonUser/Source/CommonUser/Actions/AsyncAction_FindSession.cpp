@@ -30,12 +30,32 @@ UAsyncAction_FindSession* UAsyncAction_FindSession::FindSession(UObject* WorldCo
 
 void UAsyncAction_FindSession::Activate()
 {
-	Execute_FindSessioin();
+	Execute_FindSession();
 	Super::Activate();
 }
 
-void UAsyncAction_FindSession::Execute_FindSessioin()
+void UAsyncAction_FindSession::Execute_FindSession()
 {
+	if (!WorldContextObject.IsValid() || !Player.IsValid())
+	{
+		auto HandleFailure = [this]()
+		{
+			OnFailure.Broadcast(TArray<FString>());
+			SetReadyToDestroy();
+		};
+
+		if (UWorld* World = GEngine ? GEngine->GetCurrentPlayWorld() : nullptr)
+		{
+			World->GetTimerManager().SetTimerForNextTick(
+				FTimerDelegate::CreateLambda(HandleFailure));
+		}
+		else
+		{
+			HandleFailure();
+		}
+		return;
+	}
+
 	if (const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld()))
 	{
 		if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
@@ -74,6 +94,7 @@ void UAsyncAction_FindSession::Execute_FindSessioin()
 				if (UserId.IsValid())
 				{
 					SessionPtr->FindSessions(*UserId, SessionSearch.ToSharedRef());
+					bIsSearching = true;
 
 					return ;
 				}
@@ -101,22 +122,61 @@ void UAsyncAction_FindSession::Execute_FindSessioin()
 
 void UAsyncAction_FindSession::OnFindSessionCompleted(bool bWasSuccessful)
 {
-	const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld());
-	const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
-	SessionPtr->OnFindSessionsCompleteDelegates.Remove(FindSessionDelegateHandle);
+	bIsSearching = false;
 
-	if (bWasSuccessful)
-	{
-		TArray<FString> Sessions;
-		for (const FOnlineSessionSearchResult& Result : SessionSearch->SearchResults)
-		{
-			Sessions.Add(Result.GetSessionIdStr());
-		}
-		OnSuccess.Broadcast(Sessions);
-	}
-	else
+	if (!WorldContextObject.IsValid() || bIsCancelled)
 	{
 		OnFailure.Broadcast(TArray<FString>());
+		SetReadyToDestroy();
+		return;
 	}
+
+	const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld());
+	if (OnlineSubsystem)
+	{
+		const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
+		if (SessionPtr)
+		{
+			SessionPtr->OnFindSessionsCompleteDelegates.Remove(FindSessionDelegateHandle);
+		}
+	}
+
+	if (!bIsCancelled)
+	{
+		if (bWasSuccessful)
+		{
+			TArray<FString> Sessions;
+			for (const FOnlineSessionSearchResult& Result : SessionSearch->SearchResults)
+			{
+				Sessions.Add(Result.GetSessionIdStr());
+			}
+			OnSuccess.Broadcast(Sessions);
+		}
+		else
+		{
+			OnFailure.Broadcast(TArray<FString>());
+		}
+	}
+
 	SetReadyToDestroy();
+}
+
+void UAsyncAction_FindSession::Cancel()
+{
+	bIsCancelled = true;
+
+	if (bIsSearching && WorldContextObject.IsValid())
+	{
+		if (const IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld()))
+		{
+			if (const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
+			{
+				SessionPtr->OnFindSessionsCompleteDelegates.Remove(FindSessionDelegateHandle);
+				SessionPtr->CancelFindSessions();
+				bIsSearching = false;
+			}
+		}
+	}
+
+	Super::Cancel();
 }

@@ -4,8 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "AsyncAction_Types.h"
-#include "Kismet/BlueprintAsyncActionBase.h"
+#include "Engine/CancellableAsyncAction.h"
 #include "AsyncAction_GetLobbyFullInfo.generated.h"
+
+
+#define UE_API COMMONUSER_API
+
 
 USTRUCT (BlueprintType)
 struct FLobbyMemberFullInfo
@@ -63,19 +67,19 @@ struct FLobbyFullInfo
 
 
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGetLobbyFullInfo_Delegate, FLobbyFullInfo, LobbyBasicInfo);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGetLobbyFullInfo_Delegate, FLobbyFullInfo, LobbyFullInfo);
 
 
 
 
 UCLASS(MinimalAPI)
-class UAsyncAction_GetLobbyFullInfo : public UBlueprintAsyncActionBase
+class UAsyncAction_GetLobbyFullInfo : public UCancellableAsyncAction
 {
 	GENERATED_BODY()
 
 public:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"), Category="CommonUser")
-	static COMMONUSER_API UAsyncAction_GetLobbyFullInfo* GetLobbyFullInfo(
+	static UE_API UAsyncAction_GetLobbyFullInfo* GetLobbyFullInfo(
 		UObject* WorldContextObject,
 		APlayerController* Player);
 
@@ -88,7 +92,12 @@ protected:
 	TWeakObjectPtr<UObject> WorldContextObject;
 	TWeakObjectPtr<APlayerController> Player;
 	FLobbyFullInfo Result;
+	bool bIsCancelled = false;
+	bool bIsSearching = false;
 
-	virtual void Activate() override;
-	void Execute_GetLobbyFullInfo();
+	UE_API virtual void Activate() override;
+	UE_API void Execute_GetLobbyFullInfo();
+	UE_API virtual void Cancel() override;
 };
+
+#undef UE_API

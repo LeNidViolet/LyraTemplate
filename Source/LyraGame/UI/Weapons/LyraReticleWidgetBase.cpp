@@ -21,7 +21,7 @@ void ULyraReticleWidgetBase::InitializeFromWeapon(ULyraWeaponInstance* InWeapon)
 	{
 		InventoryInstance = Cast<ULyraInventoryItemInstance>(WeaponInstance->GetInstigator());
 	}
-	OnWeaponInitialized();
+	K2_OnWeaponInitialized();
 }
 
 

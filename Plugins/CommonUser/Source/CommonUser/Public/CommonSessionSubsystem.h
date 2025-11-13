@@ -357,10 +357,6 @@ public:
 	UPROPERTY(Config)
 	bool bUseBeacons = true;
 
-	/** Replace the Dedicated Server (DS) address with the local address for local testing. */
-	UPROPERTY(Config)
-	bool bLocalHostOverride = false;
-
 protected:
 	// Functions called during the process of creating or joining a session, these can be overidden for game-specific behavior
 

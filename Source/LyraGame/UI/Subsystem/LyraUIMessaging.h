@@ -35,10 +35,4 @@ private:
 
 	UPROPERTY()
 	TSubclassOf<UCommonGameDialog> ErrorDialogClassPtr;
-
-	UPROPERTY(config)
-	TSoftClassPtr<UCommonGameDialog> ConfirmationDialogClass;
-
-	UPROPERTY(config)
-	TSoftClassPtr<UCommonGameDialog> ErrorDialogClass;
 };

@@ -9,7 +9,7 @@
 #include "LyraUINaviSubsystem.generated.h"
 
 
-struct FOnUINaviFocusParameters;
+struct FOnUIFocusNaviParameters;
 
 UCLASS(MinimalAPI)
 class ULyraUINaviSubsystem : public ULocalPlayerSubsystem
@@ -19,13 +19,20 @@ class ULyraUINaviSubsystem : public ULocalPlayerSubsystem
 public:
 	ULyraUINaviSubsystem() {}
 
+	// 设置是否允许摇杆导航
+	UFUNCTION(BlueprintCallable, Category=UINavigation)
+	static void SetAllowAnalogNavigation(bool Allow);
+
+
 protected:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
+
+
 	FGameplayMessageListenerHandle UINaviFocusEventListener;
-	void HandleUINaviFocusEvent(FGameplayTag Channel, const FOnUINaviFocusParameters& Parameters);
+	void HandleUIFocusNaviEvent(FGameplayTag Channel, const FOnUIFocusNaviParameters& Parameters);
 
 	FString CurrentFocusedWidgetId;
 };

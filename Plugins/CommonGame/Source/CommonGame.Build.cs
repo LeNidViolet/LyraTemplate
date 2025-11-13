@@ -30,6 +30,7 @@ public class CommonGame : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"DeveloperSettings",
 			}
 		);
 		

@@ -27,6 +27,7 @@
 #include "CommonSessionSubsystem.h"
 #include "TimerManager.h"
 #include "GameMapsSettings.h"
+#include "LyraFrameworkSettings.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(LyraGameMode)
 
@@ -157,7 +158,7 @@ void ALyraGameMode::HandleMatchAssignmentIfNotExpectingOne()
 		}
 
 		//@TODO: Pull this from a config setting or something
-		ExperienceId = FPrimaryAssetId(FPrimaryAssetType("LyraExperienceDefinition"), FName("BP_Experience_Default"));
+		ExperienceId = GetDefault<ULyraFrameworkSettings>()->DefaultExperienceId;
 		ExperienceIdSource = TEXT("Default");
 	}
 

@@ -4,18 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
 #include "LyraWorldMarker.generated.h"
 
 #define UE_API LYRAGAME_API
 
+
+struct FGameplayTag;
+struct FOnMarkerDiscoverParameters;
 class USphereComponent;
 
 
 
-#define WORLD_MARKER_INDEX_INVALID		(-1)
-#define WORLD_MARKER_INDEX_PRREDICTED	(-2)
-
-
+#define WORLD_MARKER_INDEX_INVALID		(int32)(-1)
+#define WORLD_MARKER_INDEX_PRREDICTED	(int32)(-2)
 
 UENUM(BlueprintType)
 enum class ELyraWorldMarkerType : uint8
@@ -26,6 +28,35 @@ enum class ELyraWorldMarkerType : uint8
 	Enemy,
 	Friendly
 };
+
+
+
+USTRUCT()
+struct FLyraWorldMarkerData
+{
+	// Marker同步数据
+
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TObjectPtr<APlayerState> OwnerPlayer;
+
+	UPROPERTY()
+	ELyraWorldMarkerType MarkerType = ELyraWorldMarkerType::None;
+
+	UPROPERTY()
+	FLinearColor Color = FLinearColor::White;
+
+	UPROPERTY()
+	int32 MarkerId = WORLD_MARKER_INDEX_INVALID;
+
+	// 本地预测标记点?
+	UPROPERTY()
+	bool bPredictedMarker = false;
+};
+
+
+
 
 UCLASS(MinimalAPI, BlueprintType, Blueprintable)
 class ALyraWorldMarker : public AActor
@@ -50,16 +81,16 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="WorldMarker")
 	static UE_API int32 PredictedId() { return WORLD_MARKER_INDEX_PRREDICTED; }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="WorldMarker")
-	UE_API APlayerState* GetOwnerPlayer() const { return OwnerPlayer.Get(); }
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="WorldMarker")
-	UE_API ELyraWorldMarkerType GetMarkerType() const { return MarkerType; }
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="WorldMarker")
-	UE_API FLinearColor GetColor() const { return Color; }
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="WorldMarker")
-	UE_API int32 GetMarkerId() const { return MarkerId; }
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="WorldMarker")
-	UE_API bool IsPredictedMarker() const { return bPredictedMarker; }
+	UFUNCTION(BlueprintCallable, Category="WorldMarker")
+	UE_API APlayerState* GetOwnerPlayer() const { return MarkerData.OwnerPlayer.Get(); }
+	UFUNCTION(BlueprintCallable, Category="WorldMarker")
+	UE_API ELyraWorldMarkerType GetMarkerType() const { return MarkerData.MarkerType; }
+	UFUNCTION(BlueprintCallable, Category="WorldMarker")
+	UE_API FLinearColor GetMarkerColor() const { return MarkerData.Color; }
+	UFUNCTION(BlueprintCallable, Category="WorldMarker")
+	UE_API int32 GetMarkerId() const { return MarkerData.MarkerId; }
+	UFUNCTION(BlueprintCallable, Category="WorldMarker")
+	UE_API bool IsPredictedMarker() const { return MarkerData.bPredictedMarker; }
 
 protected:
 	UE_API ALyraWorldMarker();
@@ -70,36 +101,30 @@ protected:
 private:
 
 	// 需要在BeginPlay之前设置一些参数, 因为 SpawnActorDeferred 无法传递额外参数??
-	UE_API virtual void Initialize(
-		APlayerState* InOwnerPlayer,
-		ELyraWorldMarkerType InMarkerType,
-		const FLinearColor& InColor,
-		int32 InMarkerId = InvalidId(),
-		bool InPredictedMarker = false);
+	virtual void Initialize(FLyraWorldMarkerData InMarkerData);
 
-	UPROPERTY(Replicated)
-	TObjectPtr<APlayerState> OwnerPlayer;
+	UFUNCTION()
+	void OnParentDestroyed(AActor* DestroyedActor);
 
-	UPROPERTY(Replicated)
-	ELyraWorldMarkerType MarkerType = ELyraWorldMarkerType::None;
+	UPROPERTY(ReplicatedUsing=OnRep_MarkerData)
+	FLyraWorldMarkerData MarkerData;
+	UFUNCTION()
+	void OnRep_MarkerData();
 
-	UPROPERTY(Replicated)
-	FLinearColor Color;
-
-	UPROPERTY(Replicated)
-	int32 MarkerId = 0;
-
-	// 本地预测标记点?
-	UPROPERTY(Replicated)
-	bool bPredictedMarker = false;
-
-	UPROPERTY(Replicated)
+	UPROPERTY()
 	TObjectPtr<USphereComponent> SphereComp;
 
 	// 广播添加/移除标记点的消息
 	void Broadcast_MarkerAddedMessage();
 	void Broadcast_MarkerRemovedMessage();
 
+	void RegisterMessageHandlers();
+	void UnregisterMessageHandlers();
+	FGameplayMessageListenerHandle MarkerDiscoverRequestListener;
+	void HandleMarkerDiscoverRequest(FGameplayTag Channel, const FOnMarkerDiscoverParameters& Parameters);
+
+
+	bool bComponentsInitialized = false;
 
 	static int32 NextMarkerId;
 };

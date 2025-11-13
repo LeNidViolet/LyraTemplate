@@ -3,6 +3,8 @@
 
 #include "LyraDSPlayerController.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LyraDSPlayerController)
+
 ALyraDSPlayerController::ALyraDSPlayerController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {

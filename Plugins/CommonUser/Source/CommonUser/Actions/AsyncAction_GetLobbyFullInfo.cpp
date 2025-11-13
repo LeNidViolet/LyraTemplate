@@ -37,6 +37,26 @@ void UAsyncAction_GetLobbyFullInfo::Activate()
 
 void UAsyncAction_GetLobbyFullInfo::Execute_GetLobbyFullInfo()
 {
+	if (!WorldContextObject.IsValid() || !Player.IsValid())
+	{
+		auto HandleFailure = [this]()
+		{
+			OnFailure.Broadcast(FLobbyFullInfo());
+			SetReadyToDestroy();
+		};
+
+		if (UWorld* World = GEngine ? GEngine->GetCurrentPlayWorld() : nullptr)
+		{
+			World->GetTimerManager().SetTimerForNextTick(
+				FTimerDelegate::CreateLambda(HandleFailure));
+		}
+		else
+		{
+			HandleFailure();
+		}
+		return;
+	}
+
 	bool bSuccess = false;
 	if (const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld()))
 	{
@@ -107,7 +127,7 @@ void UAsyncAction_GetLobbyFullInfo::Execute_GetLobbyFullInfo()
 		}
 		else
 		{
-			OnFailure.Broadcast(Result);
+			OnFailure.Broadcast(FLobbyFullInfo());
 		}
 
 		SetReadyToDestroy();
@@ -122,4 +142,13 @@ void UAsyncAction_GetLobbyFullInfo::Execute_GetLobbyFullInfo()
 	{
 		HandleResult();
 	}
+}
+
+void UAsyncAction_GetLobbyFullInfo::Cancel()
+{
+	bIsCancelled = true;
+
+	// 这里的操作是'同步'的 没有什么需要取消的
+
+	Super::Cancel();
 }

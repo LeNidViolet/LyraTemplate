@@ -10,7 +10,7 @@
 
 #define UE_API LYRAGAME_API
 
-struct FClientRequestNameplateParameters;
+struct FOnNameplateDiscoverParameters;
 
 UCLASS(MinimalAPI)
 class ULyraNameplateSourceComponent : public UPawnComponent
@@ -22,8 +22,8 @@ public:
 	UE_API ULyraNameplateSourceComponent(const FObjectInitializer& ObjectInitializer);
 
 	/** Returns the pawn extension component if one exists on the specified actor. */
-	UFUNCTION(BlueprintPure, Category = "Lyra|Pawn")
-	static ULyraNameplateSourceComponent* FindNameplateSourceComponent(const AActor* Actor) { return (Actor ? Actor->FindComponentByClass<ULyraNameplateSourceComponent>() : nullptr); }
+	UFUNCTION(BlueprintPure, Category = "Component")
+	static UE_API ULyraNameplateSourceComponent* GetComponent(const AActor* Actor);
 
 
 protected:
@@ -31,10 +31,14 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Pawn")
-	TSubclassOf<UIndicatorDescriptor> DescriptorClass;
+private:
+	void RegisterMessageHandlers();
+	void UnregisterMessageHandlers();
+	void BroadcastNameplateAddMessage();
+	void BroadcastNameplateRemoveMessage();
 
-	void HandleNameplateDiscoverRequest(FGameplayTag Channel, const FClientRequestNameplateParameters& Parameters);
+	FGameplayMessageListenerHandle NameplateDiscoverListenerHandle;
+	void HandleNameplateDiscoverRequest(FGameplayTag Channel, const FOnNameplateDiscoverParameters& Parameters);
 };
 
 #undef UE_API

@@ -18,8 +18,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Appearance)
 	FSlateBrush Brush;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Appearance)
-	FSlateBrush AmmoBrush;
+	// 使用 InventoryFragment_Ammo 代替
+//	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Appearance)
+//	FSlateBrush AmmoBrush;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Appearance)
 	FText DisplayNameWhenEquipped;

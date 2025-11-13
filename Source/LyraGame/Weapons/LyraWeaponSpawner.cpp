@@ -129,7 +129,7 @@ void ALyraWeaponSpawner::AttemptPickUpWeapon_Implementation(APawn* Pawn)
 		if (WeaponItemDefinition != nullptr)
 		{
 			//Attempt to grant the weapon
-			if (GiveWeapon(WeaponItemDefinition, Pawn))
+			if (K2_OnGiveWeapon(WeaponItemDefinition, Pawn))
 			{
 				//Weapon picked up by pawn
 				bIsWeaponAvailable = false;

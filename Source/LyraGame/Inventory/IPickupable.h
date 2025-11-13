@@ -19,15 +19,15 @@ class UObject;
 struct FFrame;
 
 USTRUCT(BlueprintType)
-struct FPickupTemplate
+struct FPickupDefinition
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 StackCount = 1;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<ULyraInventoryItemDefinition> ItemDef;
 };
 
@@ -37,6 +37,9 @@ struct FPickupInstance
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 StackCount = 1;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<ULyraInventoryItemInstance> Item = nullptr;
 };
@@ -51,7 +54,7 @@ public:
 	TArray<FPickupInstance> Instances;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TArray<FPickupTemplate> Templates;
+	TArray<FPickupDefinition> Definitions;
 };
 
 /**  */

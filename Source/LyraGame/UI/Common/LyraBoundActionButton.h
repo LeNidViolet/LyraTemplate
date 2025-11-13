@@ -21,8 +21,10 @@ class ULyraBoundActionButton : public UCommonBoundActionButton
 	
 protected:
 	UE_API virtual void NativeConstruct() override;
+	UE_API virtual void NativeDestruct() override;
 
 private:
+	FDelegateHandle InputMethodChangedHandle;
 	void HandleInputMethodChanged(ECommonInputType NewInputMethod);
 
 	UPROPERTY(EditAnywhere, Category = "Styles")

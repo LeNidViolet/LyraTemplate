@@ -7,6 +7,8 @@
 #include "CommonUserSubsystem.h"
 #include "Net/UnrealNetwork.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LyraLobbyPlayerState)
+
 
 void ALyraLobbyPlayerState::RPC_SetReady_Implementation(bool bNewReadyState)
 {

@@ -40,7 +40,7 @@ void ULyraWeaponUserInterface::NativeTick(const FGeometry& MyGeometry, float InD
 					ULyraWeaponInstance* OldWeapon = CurrentInstance;
 					CurrentInstance = NewInstance;
 					RebuildWidgetFromWeapon();
-					OnWeaponChanged(OldWeapon, CurrentInstance);
+					K2_OnWeaponChanged(OldWeapon, CurrentInstance);
 				}
 			}
 		}

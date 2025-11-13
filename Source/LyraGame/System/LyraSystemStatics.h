@@ -56,4 +56,21 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Lyra|Experience", meta = (WorldContext = "WorldContextObject"))
 	static bool TravelExperienceWithName(const UObject* WorldContextObject, FName FacingExperience, TMap<FString, FString> ExtraArgs, bool bAbsolute = true, ECommonSessionOnlineMode OnlineMode=ECommonSessionOnlineMode::Offline);
 
+
+	/**
+	 * 在 Actor 前方扇形区域寻找一个合法的放置点
+	 * @param OriginActor 参考 Actor (提供位置和朝向)
+	 * @param MinRadius 最小距离 (避免生成在脚下)
+	 * @param MaxRadius 最大距离 (扇形纵深)
+	 * @param ConeHalfAngle 扇形半角 (度数, e.g. 45度)
+	 * @param OutLocation [Out] 找到的位置
+	 * @return 是否成功找到
+	 */
+	UFUNCTION(BlueprintCallable, Category="Lyra|Gameplay")
+	static bool FindValidSpawnLocationInCone(
+		FVector& OutLocation,
+		AActor* OriginActor,
+		float MinRadius=50.f,
+		float MaxRadius=200.f,
+		float ConeHalfAngle=60.f);
 };

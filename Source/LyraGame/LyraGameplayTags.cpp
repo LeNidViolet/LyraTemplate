@@ -65,12 +65,25 @@ namespace LyraGameplayTags
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Marker_Add, "Gameplay.Message.Marker.Add", "Indicates a request to add/display a world marker.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Marker_Remove, "Gameplay.Message.Marker.Remove", "Indicates a request to remove/hide a world marker");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Marker_Discover, "Gameplay.Message.Marker.Discover", "Indicates a new world marker has been discovered, typically followed by an Add request.");
+
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Callout_Display, "Gameplay.Message.Callout.Display", "Indicates a request to display a UI callout.");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(ToastMessage_Lobby_MemberEvent, "ToastMessage.Lobby.MemberEvent", "Toast message for when a member joins or leaves the current lobby.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(ToastMessage_Lobby_Countdown, "ToastMessage.Lobby.Countdown", "Toast message for displaying a countdown timer in the lobby.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(ToastMessage_Session_MemberEvent, "ToastMessage.Session.MemberEvent", "Toast message for when a member joins or leaves the active game session.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(UI_Navi_Focus, "UI.Navi.Focus", "Used to indicate which UI element currently has navigation focus.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(UI_Focus_Navi, "UI.Focus.Navi", "Used to indicate which UI element currently has navigation focus.");
 
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Inventory_Stack_Changed, "Inventory.Stack.Changed", "Indicates that an inventory stack has changed.");
+
+
+	// Interaction Ability Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Interaction_Placeholder, "Ability.Interaction.Placeholder", "Placeholder tag for interaction abilities.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Interaction_Duration_Message, "Ability.Interaction.Duration.Message", "Message sent when an interaction with a duration starts or ends.");
+	// 拾取道具(主动)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Interaction_Pickup_Active, "Ability.Interaction.Pickup.Active", "Ability tag for active pickups (e.g., player-initiated).");
+	// 拾取道具(自动)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Interaction_Pickup_Auto, "Ability.Interaction.Pickup.Auto", "Ability tag for automatic pickups (e.g., proximity-based).");
 
 
 	// Unreal Movement Modes

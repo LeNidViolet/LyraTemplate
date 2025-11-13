@@ -4,9 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "AsyncAction_Types.h"
-#include "Kismet/BlueprintAsyncActionBase.h"
+#include "Engine/CancellableAsyncAction.h"
 #include "AsyncAction_GetLobbyBasicInfo.generated.h"
 
+#define UE_API COMMONUSER_API
 
 USTRUCT(BlueprintType)
 struct FLobbyBasicInfo
@@ -45,13 +46,13 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGetLobbyBasicInfo_Delegate, FLobbyB
 
 
 UCLASS(MinimalAPI)
-class UAsyncAction_GetLobbyBasicInfo : public UBlueprintAsyncActionBase
+class UAsyncAction_GetLobbyBasicInfo : public UCancellableAsyncAction
 {
 	GENERATED_BODY()
 
 public:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"), Category="CommonUser")
-	static COMMONUSER_API UAsyncAction_GetLobbyBasicInfo* GetLobbyBasicInfo(
+	static UE_API UAsyncAction_GetLobbyBasicInfo* GetLobbyBasicInfo(
 		UObject* WorldContextObject,
 		APlayerController* Player,
 		const FString& LobbyId,
@@ -70,8 +71,13 @@ protected:
 	TWeakObjectPtr<APlayerController> Player;
 	TArray<FName> ExposeAttributes;
 	FString LobbyId;
+	bool bIsSearching = false;
+	bool bIsCancelled = false;
 
-	virtual void Activate() override;
-	void Execute_GetLobbyBasicInfo();
-	void OnSingleSessionResultComplete(int32 LocalUserNum, bool bWasSuccessful, const FOnlineSessionSearchResult& SearchResult);
+	UE_API virtual void Activate() override;
+	UE_API void Execute_GetLobbyBasicInfo();
+	UE_API void OnSingleSessionResultComplete(int32 LocalUserNum, bool bWasSuccessful, const FOnlineSessionSearchResult& SearchResult);
+	UE_API virtual void Cancel() override;
 };
+
+#undef UE_API

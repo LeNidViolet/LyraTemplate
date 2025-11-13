@@ -9,6 +9,9 @@
 #include "Components/MeshComponent.h"
 #include "GameModes/LyraUserFacingExperienceDefinition.h"
 #include "Kismet/GameplayStatics.h"
+#include "NavigationSystem.h"
+#include "Components/CapsuleComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(LyraSystemStatics)
 
@@ -198,5 +201,66 @@ bool ULyraSystemStatics::TravelExperienceWithName(
 		}
 	}
 	return false;
+}
+
+bool ULyraSystemStatics::FindValidSpawnLocationInCone(
+	FVector& OutLocation,
+	AActor* OriginActor,
+	float MinRadius,
+	float MaxRadius,
+	float ConeHalfAngle)
+{
+	if (!OriginActor) return false;
+
+	UWorld* World = OriginActor->GetWorld();
+	if (!World) return false;
+
+	// 1. 计算起点高度
+    FVector OriginLocation = OriginActor->GetActorLocation();
+
+    // 尝试获取胶囊体组件来精确计算
+    if (UCapsuleComponent* Capsule = OriginActor->FindComponentByClass<UCapsuleComponent>())
+    {
+        float CapsuleHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+        // GetActorLocation 通常是胶囊体中心, 这里使用 3/4 位置
+        OriginLocation.Z = OriginLocation.Z + CapsuleHalfHeight * 0.5f;
+    }
+    else
+    {
+        // 如果没有胶囊体，就默认加个高度
+        OriginLocation.Z += 50.0f;
+    }
+
+    // 2. 计算扇形目标点
+    FVector Forward = OriginActor->GetActorForwardVector();
+    float ConeHalfAngleRad = FMath::DegreesToRadians(ConeHalfAngle);
+
+    FVector RandomDir = FMath::VRandCone(Forward, ConeHalfAngleRad);
+    RandomDir.Z = 0.0f; // 保持水平方向的随机性，高度由 OriginLocation 决定
+    RandomDir.Normalize();
+
+    float RandomDist = FMath::RandRange(MinRadius, MaxRadius);
+    FVector DesiredLocation = OriginLocation + (RandomDir * RandomDist);
+
+    // 3. 防穿墙检测 (Visibility Trace)
+    // 从起点向目标点发射射线，看看中间有没有墙
+    FHitResult Hit;
+    FCollisionQueryParams QueryParams;
+    QueryParams.AddIgnoredActor(OriginActor); // 忽略自己
+
+    // 使用 Visibility 或 WorldStatic 通道
+    if (World->LineTraceSingleByChannel(Hit, OriginLocation, DesiredLocation, ECC_WorldStatic, QueryParams))
+    {
+        // 如果撞到了墙，就生成在撞击点前面一点点 (比如回缩 10cm)
+        // 这样保证物品紧贴着墙，但不会在墙里面
+        OutLocation = Hit.Location + (Hit.ImpactNormal * 10.0f);
+    }
+    else
+    {
+        // 没撞到墙，直接用理想点
+        OutLocation = DesiredLocation;
+    }
+
+    return true;
 }
 

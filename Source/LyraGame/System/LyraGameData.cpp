@@ -9,20 +9,31 @@ ULyraGameData::ULyraGameData()
 {
 }
 
-const ULyraGameData& ULyraGameData::ULyraGameData::Get()
+const ULyraGameData& ULyraGameData::Get()
 {
 	return ULyraAssetManager::Get().GetGameData();
 }
 
-TSubclassOf<UIndicatorDescriptor> ULyraGameData::GetIndicatorDescriptorClassForMarkerType(
-	ELyraWorldMarkerType MarkerType) const
+TSubclassOf<UIndicatorDescriptor> ULyraGameData::GetIndicatorClassForMarkerType(ELyraWorldMarkerType WorldMarkerType) const
 {
-	for (const FLyraWorldMarkerTypeIndicatorMapping& TypeIndicatorMapping : TypeIndicatorMappings)
+	for (const FLyraWorldMarkerDescriptor& TypeIndicatorMapping : MarkerIndicators)
 	{
-		if (TypeIndicatorMapping.MarkerType == MarkerType)
+		if (TypeIndicatorMapping.MarkerType == WorldMarkerType)
 		{
 			return TypeIndicatorMapping.IndicatorDescriptorClass;
 		}
 	}
 	return TSubclassOf<UIndicatorDescriptor>();
+}
+
+TSubclassOf<UUserWidget> ULyraGameData::GetCalloutClassForMarkerType(ELyraWorldMarkerType WorldMarkerType) const
+{
+	for (const FLyraWorldMarkerCallout& MarkerCallout : MarkerCallouts)
+	{
+		if (MarkerCallout.MarkerType == WorldMarkerType)
+		{
+			return MarkerCallout.CalloutClass;
+		}
+	}
+	return TSubclassOf<UUserWidget>();
 }

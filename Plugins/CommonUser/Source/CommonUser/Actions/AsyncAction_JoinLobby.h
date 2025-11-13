@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Interfaces/OnlineSessionInterface.h"
-#include "Kismet/BlueprintAsyncActionBase.h"
 #include "AsyncAction_Types.h"
+#include "Engine/CancellableAsyncAction.h"
 #include "AsyncAction_JoinLobby.generated.h"
 
+
+#define UE_API COMMONUSER_API
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FJoinLobby_Delegate);
@@ -18,13 +20,13 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FJoinLobby_Delegate);
  *
  */
 UCLASS(MinimalAPI)
-class UAsyncAction_JoinLobby : public UBlueprintAsyncActionBase
+class UAsyncAction_JoinLobby : public UCancellableAsyncAction
 {
 	GENERATED_BODY()
 
 public:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"), Category="CommonUser")
-	static COMMONUSER_API UAsyncAction_JoinLobby* JoinLobby(
+	static UE_API UAsyncAction_JoinLobby* JoinLobby(
 		UObject* WorldContextObject,
 		APlayerController* Player,
 		const FString& LobbyId,
@@ -43,9 +45,15 @@ protected:
 	FString LobbyId;
 	TMap<FName, FEIKAttribute> MemberSettings;
 	FDelegateHandle JoinLobbyDelegateHandle;
+	bool bIsCancelled = false;
+	bool bIsSearching = false;
+	bool bIsJoining = false;
 
-	virtual void Activate() override;
-	void Execute_JoinLobby();
-	void OnSingleSessionResultComplete(int32 LocalUserNum, bool bWasSuccessful, const FOnlineSessionSearchResult& SearchResult);
-	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	UE_API virtual void Activate() override;
+	UE_API void Execute_JoinLobby();
+	UE_API void OnSingleSessionResultComplete(int32 LocalUserNum, bool bWasSuccessful, const FOnlineSessionSearchResult& SearchResult);
+	UE_API void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	UE_API virtual void Cancel() override;
 };
+
+#undef UE_API

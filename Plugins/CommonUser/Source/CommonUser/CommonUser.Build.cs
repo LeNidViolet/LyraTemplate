@@ -56,6 +56,7 @@ public class CommonUser : ModuleRules
 				"SlateCore",
 				"ApplicationCore",
 				"InputCore",
+				"DeveloperSettings",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

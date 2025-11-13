@@ -46,9 +46,6 @@ protected:
 private:
 	UPROPERTY(Transient)
 	TObjectPtr<UGameUIPolicy> CurrentPolicy = nullptr;
-
-	UPROPERTY(config, EditAnywhere)
-	TSoftClassPtr<UGameUIPolicy> DefaultUIPolicyClass;
 };
 
 #undef UE_API

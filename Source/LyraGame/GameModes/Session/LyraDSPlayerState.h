@@ -28,27 +28,29 @@ public:
 	UPROPERTY(ReplicatedUsing=OnRep_PlayerColor, BlueprintReadOnly, VisibleAnywhere, Category="PlayerState")
 	FColor PlayerColor = FColor::White;
 
-	void AddWorldMarkerToCache(ALyraWorldMarker* MarkerActor);
-	void RemoveWorldMarkerFromCache(ALyraWorldMarker* MarkerActor);
-	void RemoveWorldMarkerFromCache(int32 MarkerId);
-	void RemoveWorldMarkerFromCache(ELyraWorldMarkerType MarkerType);
-	void RemoveAllWorldMarkers();
-	bool HasWorldMarkerInCache(int32 MarkerId) const;
+	UE_API void AddWorldMarkerToCache(ALyraWorldMarker* MarkerActor);
+	UE_API void RemoveWorldMarkerFromCache(ALyraWorldMarker* MarkerActor);
+	UE_API void RemoveWorldMarkerFromCache(int32 MarkerId);
+	UE_API void RemoveWorldMarkerFromCache(ELyraWorldMarkerType MarkerType);
+	UE_API void RemoveAllWorldMarkers();
+	UE_API bool HasWorldMarkerInCache(int32 MarkerId) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="WorldMarker")
-	ALyraWorldMarker* GetWorldMarkerForId(int32 MarkerId) const;
+	UE_API ALyraWorldMarker* GetWorldMarkerForId(int32 MarkerId) const;
 
 	UFUNCTION(BlueprintCallable, Category="WorldMarker")
-	bool RemoveWorldMarkerForId(int32 MarkerId);
+	UE_API bool RemoveWorldMarkerForId(int32 MarkerId);
 
 protected:
 	UFUNCTION()
 	void OnRep_PlayerColor();
 
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 private:
 
-	// 缓存生成的标记点列表 只存在于服务端, 不要复制, 否则产生不必要的网络开销
-	// 服务端在生成标记时添加
+	// 缓存生成的标记点列表 在服务端保存的是权威标记点 在客户端保存的是预测标记点
 	UPROPERTY()
 	TArray<TObjectPtr<ALyraWorldMarker>> MarkerList;
 };

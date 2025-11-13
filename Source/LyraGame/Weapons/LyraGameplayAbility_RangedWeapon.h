@@ -116,7 +116,7 @@ protected:
 
 	// Called when target data is ready
 	UFUNCTION(BlueprintImplementableEvent)
-	void OnRangedWeaponTargetDataReady(const FGameplayAbilityTargetDataHandle& TargetData);
+	void K2_OnRangedWeaponTargetDataReady(const FGameplayAbilityTargetDataHandle& TargetData);
 
 private:
 	FDelegateHandle OnTargetDataReadyCallbackDelegateHandle;

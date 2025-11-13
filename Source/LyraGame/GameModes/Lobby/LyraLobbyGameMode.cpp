@@ -7,6 +7,8 @@
 #include "LyraLobbyPlayerState.h"
 #include "System/LyraSystemStatics.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LyraLobbyGameMode)
+
 
 ALyraLobbyGameMode::ALyraLobbyGameMode(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -20,10 +22,7 @@ void ALyraLobbyGameMode::PostLogin(APlayerController* NewPlayer)
 	Super::PostLogin(NewPlayer);
 
 	ALyraLobbyPlayerState* PlayerState = NewPlayer->GetPlayerState<ALyraLobbyPlayerState>();
-	check(PlayerState != nullptr);
-
 	ALyraLobbyGameState* GameState = GetGameState<ALyraLobbyGameState>();
-	check(GameState != nullptr);
 
 	FString Message = FString::Printf(TEXT("%s joined the lobby"), *PlayerState->GetName());
 	GameState->Multicast_BroadcastMessage(Message);
@@ -41,23 +40,21 @@ void ALyraLobbyGameMode::PostLogin(APlayerController* NewPlayer)
 void ALyraLobbyGameMode::Logout(AController* Exiting)
 {
 	ALyraLobbyPlayerState* PlayerState = Exiting->GetPlayerState<ALyraLobbyPlayerState>();
-	check(PlayerState != nullptr);
-
-	ALyraLobbyGameState* GameState = GetGameState<ALyraLobbyGameState>();
-	check(GameState != nullptr);
-
-	FString Message = FString::Printf(TEXT("%s left the lobby"), *PlayerState->GetName());
-	GameState->Multicast_BroadcastMessage(Message);
-
-
-	if (DelegateMap.Contains(PlayerState))
+	if (PlayerState)
 	{
-		FDelegateHandle Delegate = DelegateMap.FindRef(PlayerState);
-		if (Delegate.IsValid())
+		ALyraLobbyGameState* GameState = GetGameState<ALyraLobbyGameState>();
+		FString Message = FString::Printf(TEXT("%s left the lobby"), *PlayerState->GetName());
+		GameState->Multicast_BroadcastMessage(Message);
+
+		if (DelegateMap.Contains(PlayerState))
 		{
-			PlayerState->OnPlayerReadyStateChangedEvent.Remove(Delegate);
+			FDelegateHandle Delegate = DelegateMap.FindRef(PlayerState);
+			if (Delegate.IsValid())
+			{
+				PlayerState->OnPlayerReadyStateChangedEvent.Remove(Delegate);
+			}
+			DelegateMap.Remove(PlayerState);
 		}
-		DelegateMap.Remove(PlayerState);
 	}
 
 	Super::Logout(Exiting);
@@ -75,7 +72,6 @@ void ALyraLobbyGameMode::OnPlayerReadyStateChanged(ALyraLobbyPlayerState* Player
 		*PlayerState->GetName(),
 		PlayerState->IsReady() ? *FString(TEXT("Ready")) : *FString(TEXT("Not Ready")));
 	ALyraLobbyGameState* GameState = GetGameState<ALyraLobbyGameState>();
-	check(GameState != nullptr);
 	GameState->Multicast_BroadcastMessage(Message);
 
 	RefreshLobbyCountdown();
@@ -84,7 +80,6 @@ void ALyraLobbyGameMode::OnPlayerReadyStateChanged(ALyraLobbyPlayerState* Player
 void ALyraLobbyGameMode::RefreshLobbyCountdown()
 {
 	ALyraLobbyGameState* GameState = GetGameState<ALyraLobbyGameState>();
-	if (!GameState) return;
 
 	int32 PlayerCountInReadyState = 0;
 	for (TPair<ALyraLobbyPlayerState*, FDelegateHandle>& Pair : DelegateMap)
@@ -146,25 +141,23 @@ void ALyraLobbyGameMode::StartCountdownTimer()
 	if (!TimerHandle.IsValid())
 	{
 		UWorld* World = GetWorld();
-		if (!World)
+		if (World)
 		{
-			return;
+			FTimerManager& TimerManager = World->GetTimerManager();
+
+			FTimerDelegate TimerDelegate;
+			TimerDelegate.BindUObject(this, &ALyraLobbyGameMode::TimerExpiredFunction);
+
+			float DelayTime = 1.0f;
+			bool bLooping = true;
+
+			TimerManager.SetTimer(
+				TimerHandle,
+				TimerDelegate,
+				DelayTime,
+				bLooping
+			);
 		}
-
-		FTimerManager& TimerManager = World->GetTimerManager();
-
-		FTimerDelegate TimerDelegate;
-		TimerDelegate.BindUObject(this, &ALyraLobbyGameMode::TimerExpiredFunction);
-
-		float DelayTime = 1.0f;
-		bool bLooping = true;
-
-		TimerManager.SetTimer(
-			TimerHandle,
-			TimerDelegate,
-			DelayTime,
-			bLooping
-		);
 	}
 }
 
@@ -173,25 +166,18 @@ void ALyraLobbyGameMode::StopCountdownTimer()
 	if (TimerHandle.IsValid())
 	{
 		UWorld* World = GetWorld();
-		if (!World)
+		if (World)
 		{
-			return;
+			FTimerManager& TimerManager = World->GetTimerManager();
+			TimerManager.ClearTimer(TimerHandle);
+			TimerHandle = FTimerHandle();
 		}
-
-		FTimerManager& TimerManager = World->GetTimerManager();
-		TimerManager.ClearTimer(TimerHandle);
-		TimerHandle = FTimerHandle();
 	}
 }
 
 void ALyraLobbyGameMode::TimerExpiredFunction()
 {
 	ALyraLobbyGameState* GameState = GetGameState<ALyraLobbyGameState>();
-	if (!GameState)
-	{
-		StopCountdownTimer();
-		return;
-	}
 
 	CurrentCountdownValue--;
 	if (CurrentCountdownValue <= 0)

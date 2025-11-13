@@ -15,18 +15,26 @@ ULyraActivatableWidget::ULyraActivatableWidget(const FObjectInitializer& ObjectI
 
 TOptional<FUIInputConfig> ULyraActivatableWidget::GetDesiredInputConfig() const
 {
+	FUIInputConfig Result;
+
 	switch (InputConfig)
 	{
 	case ELyraWidgetInputMode::GameAndMenu:
-		return FUIInputConfig(ECommonInputMode::All, GameMouseCaptureMode);
+		Result = FUIInputConfig(ECommonInputMode::All, GameMouseCaptureMode);
+		break;
 	case ELyraWidgetInputMode::Game:
-		return FUIInputConfig(ECommonInputMode::Game, GameMouseCaptureMode);
+		Result = FUIInputConfig(ECommonInputMode::Game, GameMouseCaptureMode);
+		break;
 	case ELyraWidgetInputMode::Menu:
-		return FUIInputConfig(ECommonInputMode::Menu, EMouseCaptureMode::NoCapture);
+		Result = FUIInputConfig(ECommonInputMode::Menu, EMouseCaptureMode::NoCapture);
+		break;
 	case ELyraWidgetInputMode::Default:
 	default:
 		return TOptional<FUIInputConfig>();
 	}
+
+	Result.bIgnoreLookInput = bIgnoreLookInput;
+	return Result;
 }
 
 #if WITH_EDITOR
@@ -47,6 +55,20 @@ void ULyraActivatableWidget::ValidateCompiledWidgetTree(const UWidgetTree& Bluep
 			CompileLog.Note(LOCTEXT("ValidateGetDesiredFocusTarget_Note", "GetDesiredFocusTarget wasn't implemented, you're going to have trouble using gamepads on this screen.  If it was implemented in the native base class you can ignore this message."));
 		}
 	}
+}
+
+void ULyraActivatableWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	// 在最顶级页面上禁用导航, 避免焦点移动到下层页面上
+
+	SetNavigationRuleBase(EUINavigation::Left, EUINavigationRule::Stop);
+	SetNavigationRuleBase(EUINavigation::Right, EUINavigationRule::Stop);
+	SetNavigationRuleBase(EUINavigation::Up, EUINavigationRule::Stop);
+	SetNavigationRuleBase(EUINavigation::Down, EUINavigationRule::Stop);
+	SetNavigationRuleBase(EUINavigation::Next, EUINavigationRule::Stop);
+	SetNavigationRuleBase(EUINavigation::Previous, EUINavigationRule::Stop);
 }
 
 #endif

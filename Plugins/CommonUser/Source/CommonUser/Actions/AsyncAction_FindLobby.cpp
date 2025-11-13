@@ -40,6 +40,26 @@ void UAsyncAction_FindLobby::Activate()
 
 void UAsyncAction_FindLobby::Execute_FindLobby()
 {
+	if (!WorldContextObject.IsValid() || !Player.IsValid())
+	{
+		auto HandleFailure = [this]()
+		{
+			OnFailure.Broadcast(TArray<FString>());
+			SetReadyToDestroy();
+		};
+
+		if (UWorld* World = GEngine ? GEngine->GetCurrentPlayWorld() : nullptr)
+		{
+			World->GetTimerManager().SetTimerForNextTick(
+				FTimerDelegate::CreateLambda(HandleFailure));
+		}
+		else
+		{
+			HandleFailure();
+		}
+		return;
+	}
+
 	if (const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld()))
 	{
 		if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
@@ -79,6 +99,7 @@ void UAsyncAction_FindLobby::Execute_FindLobby()
 				if (UserId.IsValid())
 				{
 					SessionPtr->FindSessions(*UserId, SessionSearch.ToSharedRef());
+					bIsSearching = true;
 
 					return ;
 				}
@@ -107,22 +128,61 @@ void UAsyncAction_FindLobby::Execute_FindLobby()
 
 void UAsyncAction_FindLobby::OnFindLobbyCompleted(bool bWasSuccessful)
 {
-	const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld());
-	const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
-	SessionPtr->OnFindSessionsCompleteDelegates.Remove(FindLobbyDelegateHandle);
+	bIsSearching = false;
 
-	if (bWasSuccessful)
-	{
-		TArray<FString> Lobbies;
-		for (const FOnlineSessionSearchResult& Result : SessionSearch->SearchResults)
-		{
-			Lobbies.Add(Result.GetSessionIdStr());
-		}
-		OnSuccess.Broadcast(Lobbies);
-	}
-	else
+	if (!WorldContextObject.IsValid() || bIsCancelled)
 	{
 		OnFailure.Broadcast(TArray<FString>());
+		SetReadyToDestroy();
+		return;
 	}
+
+	const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld());
+	if (OnlineSubsystem)
+	{
+		const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
+		if (SessionPtr)
+		{
+			SessionPtr->OnFindSessionsCompleteDelegates.Remove(FindLobbyDelegateHandle);
+		}
+	}
+
+	if (!bIsCancelled)
+	{
+		if (bWasSuccessful)
+		{
+			TArray<FString> Lobbies;
+			for (const FOnlineSessionSearchResult& Result : SessionSearch->SearchResults)
+			{
+				Lobbies.Add(Result.GetSessionIdStr());
+			}
+			OnSuccess.Broadcast(Lobbies);
+		}
+		else
+		{
+			OnFailure.Broadcast(TArray<FString>());
+		}
+	}
+
 	SetReadyToDestroy();
+}
+
+void UAsyncAction_FindLobby::Cancel()
+{
+	bIsCancelled = true;
+
+	if (bIsSearching && WorldContextObject.IsValid())
+	{
+		if (const IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld()))
+		{
+			if (const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
+			{
+				SessionPtr->OnFindSessionsCompleteDelegates.Remove(FindLobbyDelegateHandle);
+				SessionPtr->CancelFindSessions();
+				bIsSearching = false;
+			}
+		}
+	}
+
+	Super::Cancel();
 }

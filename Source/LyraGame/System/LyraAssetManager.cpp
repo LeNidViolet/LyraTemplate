@@ -2,9 +2,7 @@
 
 #include "LyraAssetManager.h"
 #include "LyraLogChannels.h"
-#include "LyraGameplayTags.h"
 #include "LyraGameData.h"
-#include "AbilitySystemGlobals.h"
 #include "Character/LyraPawnData.h"
 #include "Misc/App.h"
 #include "Stats/StatsMisc.h"
@@ -12,6 +10,7 @@
 #include "AbilitySystem/LyraGameplayCueManager.h"
 #include "Misc/ScopedSlowTask.h"
 #include "System/LyraAssetManagerStartupJob.h"
+#include "LyraFrameworkSettings.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(LyraAssetManager)
 
@@ -34,7 +33,8 @@ static FAutoConsoleCommand CVarDumpLoadedAssets(
 
 ULyraAssetManager::ULyraAssetManager()
 {
-	DefaultPawnData = nullptr;
+	DefaultPawnData = GetDefault<ULyraFrameworkSettings>()->DefaultPawnData;
+	DefaultGameData = GetDefault<ULyraFrameworkSettings>()->DefaultGameData;
 }
 
 ULyraAssetManager& ULyraAssetManager::Get()
@@ -133,7 +133,7 @@ void ULyraAssetManager::InitializeGameplayCueManager()
 
 const ULyraGameData& ULyraAssetManager::GetGameData()
 {
-	return GetOrLoadTypedGameData<ULyraGameData>(LyraGameDataPath);
+	return GetOrLoadTypedGameData<ULyraGameData>(DefaultGameData);
 }
 
 const ULyraPawnData* ULyraAssetManager::GetDefaultPawnData() const

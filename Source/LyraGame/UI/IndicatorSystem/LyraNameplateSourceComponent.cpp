@@ -7,7 +7,7 @@
 #include "Messages/LyraNotificationMessage_Nameplate.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
 
-
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LyraNameplateSourceComponent)
 
 
 // Sets default values for this component's properties
@@ -21,66 +21,112 @@ ULyraNameplateSourceComponent::ULyraNameplateSourceComponent(const FObjectInitia
 	// ...
 }
 
+ULyraNameplateSourceComponent* ULyraNameplateSourceComponent::GetComponent(const AActor* Actor)
+{
+	return (Actor ? Actor->FindComponentByClass<ULyraNameplateSourceComponent>() : nullptr);
+}
 
 
 // Called when the game starts
 void ULyraNameplateSourceComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	RegisterMessageHandlers();
+}
 
-	if (UGameplayMessageSubsystem::HasInstance(GetWorld()))
+void ULyraNameplateSourceComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UnregisterMessageHandlers();
+	Super::EndPlay(EndPlayReason);
+}
+
+void ULyraNameplateSourceComponent::HandleNameplateDiscoverRequest(FGameplayTag Channel, const FOnNameplateDiscoverParameters& Parameters)
+{
+	BroadcastNameplateAddMessage();
+}
+
+void ULyraNameplateSourceComponent::RegisterMessageHandlers()
+{
+	UGameInstance* GameInstance = GetGameInstance<UGameInstance>();
+	if (GameInstance)
 	{
-		if (DescriptorClass)
+		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
+		if (MessageSubsystem)
 		{
-			FOnAddNameplateParameters Parameters;
-			Parameters.Pawn = GetPawn<APawn>();
-			Parameters.DescriptorClass = DescriptorClass;
+			// 游戏中的每个 HeroCharacter 都会被注入一个 Nameplate Source Component, 不管是本地玩家还是远程玩家
+			// 在 HeroCharacter 初始化时, Nameplate Source Component 会广播一个添加 Nameplate 的消息
+			// Nameplate Manager Component 监听该消息, 并为对应的 Pawn 创建 Nameplate 指示器
+			// 这样本地玩家和远程玩家的 Nameplate 都能被正确创建和管理
 
-			UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(
-				LyraGameplayTags::Gameplay_Message_Nameplate_Add,
-				Parameters
+			// 主动广播
+			BroadcastNameplateAddMessage();
+
+			// 被动应答
+			if (!NameplateDiscoverListenerHandle.IsValid())
+			{
+				MessageSubsystem->RegisterListener<FOnNameplateDiscoverParameters>(
+					LyraGameplayTags::Gameplay_Message_Nameplate_Discover,
+					this,
+					&ThisClass::HandleNameplateDiscoverRequest
 				);
+			}
+		}
+	}
+}
 
-			UGameplayMessageSubsystem::Get(GetWorld()).RegisterListener<FClientRequestNameplateParameters>(
-			LyraGameplayTags::Gameplay_Message_Nameplate_Discover,
-				this,
-				&ThisClass::HandleNameplateDiscoverRequest
+void ULyraNameplateSourceComponent::UnregisterMessageHandlers()
+{
+	UGameInstance* GameInstance = GetGameInstance<UGameInstance>();
+	if (GameInstance)
+	{
+		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
+		if (MessageSubsystem)
+		{
+			BroadcastNameplateRemoveMessage();
+
+			if (NameplateDiscoverListenerHandle.IsValid())
+			{
+				NameplateDiscoverListenerHandle.Unregister();
+			}
+		}
+	}
+}
+
+void ULyraNameplateSourceComponent::BroadcastNameplateAddMessage()
+{
+	UGameInstance* GameInstance = GetGameInstance<UGameInstance>();
+	if (GameInstance)
+	{
+		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
+		if (MessageSubsystem)
+		{
+			// 广播添加 Nameplate 的消息
+			FOnNameplateAddParameters AddParameters;
+			AddParameters.Pawn = GetPawn<APawn>();
+
+			MessageSubsystem->BroadcastMessage(
+				LyraGameplayTags::Gameplay_Message_Nameplate_Add,
+				AddParameters
 				);
 		}
 	}
 }
 
-void ULyraNameplateSourceComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void ULyraNameplateSourceComponent::BroadcastNameplateRemoveMessage()
 {
-	if (UGameplayMessageSubsystem::HasInstance(GetWorld()))
+	UGameInstance* GameInstance = GetGameInstance<UGameInstance>();
+	if (GameInstance)
 	{
-		FOnRemoveNameplateParameters Parameters;
-		Parameters.Pawn = GetPawn<APawn>();
-
-		UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(
-		LyraGameplayTags::Gameplay_Message_Nameplate_Remove,
-			Parameters
-			);
-	}
-
-	Super::EndPlay(EndPlayReason);
-}
-
-void ULyraNameplateSourceComponent::HandleNameplateDiscoverRequest(FGameplayTag Channel,
-	const FClientRequestNameplateParameters& Parameters)
-{
-	if (UGameplayMessageSubsystem::HasInstance(GetWorld()))
-	{
-		if (DescriptorClass)
+		UGameplayMessageSubsystem* MessageSubsystem = GameInstance->GetSubsystem<UGameplayMessageSubsystem>();
+		if (MessageSubsystem)
 		{
-			FOnAddNameplateParameters AddParameters;
-			AddParameters.Pawn = GetPawn<APawn>();
-			AddParameters.DescriptorClass = DescriptorClass;
+			// 广播移除 Nameplate 的消息
+			FOnNameplateRemoveParameters Parameters;
+			Parameters.Pawn = GetPawn<APawn>();
 
-			UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(
-				LyraGameplayTags::Gameplay_Message_Nameplate_Add,
-				AddParameters
-				);
+			MessageSubsystem->BroadcastMessage(
+				LyraGameplayTags::Gameplay_Message_Nameplate_Remove,
+				Parameters);
 		}
 	}
 }

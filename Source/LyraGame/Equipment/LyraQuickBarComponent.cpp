@@ -10,6 +10,7 @@
 #include "Inventory/InventoryFragment_EquippableItem.h"
 #include "NativeGameplayTags.h"
 #include "Net/UnrealNetwork.h"
+#include "System/LyraGameData.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(LyraQuickBarComponent)
 
@@ -35,6 +36,8 @@ void ULyraQuickBarComponent::GetLifetimeReplicatedProps(TArray< FLifetimePropert
 
 void ULyraQuickBarComponent::BeginPlay()
 {
+	NumSlots = ULyraGameData::Get().QuickBarMaxCapacity;
+
 	if (Slots.Num() < NumSlots)
 	{
 		Slots.AddDefaulted(NumSlots - Slots.Num());

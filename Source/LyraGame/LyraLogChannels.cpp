@@ -7,6 +7,7 @@ DEFINE_LOG_CATEGORY(LogLyra);
 DEFINE_LOG_CATEGORY(LogLyraExperience);
 DEFINE_LOG_CATEGORY(LogLyraAbilitySystem);
 DEFINE_LOG_CATEGORY(LogLyraTeams);
+DEFINE_LOG_CATEGORY(LogLyraInventory);
 
 FString GetClientServerContextString(UObject* ContextObject)
 {

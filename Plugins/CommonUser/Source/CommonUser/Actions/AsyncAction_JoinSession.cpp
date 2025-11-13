@@ -9,9 +9,10 @@
 #include "OnlineSubsystemUtils.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "AsyncAction_LogChannel.h"
+#include "CommonUserSettings.h"
 
 UAsyncAction_JoinSession* UAsyncAction_JoinSession::JoinSession(UObject* WorldContextObject, APlayerController* Player,
-	const FString& SessionId, TMap<FName, FEIKAttribute> MemberSettings)
+                                                                const FString& SessionId, TMap<FName, FEIKAttribute> MemberSettings)
 {
 	if (!Player || !WorldContextObject || SessionId.IsEmpty())
 	{
@@ -36,6 +37,26 @@ void UAsyncAction_JoinSession::Activate()
 
 void UAsyncAction_JoinSession::Execute_JoinSession()
 {
+	if (!WorldContextObject.IsValid() || !Player.IsValid())
+	{
+		auto HandleFailure = [this]()
+		{
+			OnFailure.Broadcast();
+			SetReadyToDestroy();
+		};
+
+		if (UWorld* World = GEngine ? GEngine->GetCurrentPlayWorld() : nullptr)
+		{
+			World->GetTimerManager().SetTimerForNextTick(
+				FTimerDelegate::CreateLambda(HandleFailure));
+		}
+		else
+		{
+			HandleFailure();
+		}
+		return;
+	}
+
 	if (const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld()))
 	{
 		if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
@@ -51,6 +72,7 @@ void UAsyncAction_JoinSession::Execute_JoinSession()
 
 					FOnSingleSessionResultCompleteDelegate Delegate = FOnSingleSessionResultCompleteDelegate::CreateUObject(this, &ThisClass::OnSingleSessionResultComplete);
 					SessionPtr->FindSessionById(*UserId.Get(), *SessionNetId, *EmptyId, Delegate);
+					bIsSearching = true;
 
 					return;
 				}
@@ -78,56 +100,110 @@ void UAsyncAction_JoinSession::Execute_JoinSession()
 void UAsyncAction_JoinSession::OnSingleSessionResultComplete(int32 LocalUserNum, bool bWasSuccessful,
 	const FOnlineSessionSearchResult& SearchResult)
 {
-	if (bWasSuccessful && SearchResult.IsValid())
+	bIsSearching = false;
+
+	if (!WorldContextObject.IsValid() || bIsCancelled)
 	{
-		const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld());
-		const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
-
-		JoinSessionDelegateHandle = SessionPtr->OnJoinSessionCompleteDelegates.AddUObject(this, &ThisClass::OnJoinSessionComplete);
-		SessionPtr->JoinSession(LocalUserNum, NAME_GameSession, SearchResult);
-
-		return ;
+		OnFailure.Broadcast();
+		SetReadyToDestroy();
+		return;
 	}
 
-	OnFailure.Broadcast();
+	if (!bIsCancelled)
+	{
+		if (bWasSuccessful && SearchResult.IsValid())
+		{
+			const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld());
+			const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
+
+			JoinSessionDelegateHandle = SessionPtr->OnJoinSessionCompleteDelegates.AddUObject(this, &ThisClass::OnJoinSessionComplete);
+			SessionPtr->JoinSession(LocalUserNum, NAME_GameSession, SearchResult);
+			bIsJoining = true;
+
+			return ;
+		}
+
+		OnFailure.Broadcast();
+	}
+
 	SetReadyToDestroy();
 }
 
 void UAsyncAction_JoinSession::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
-	const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld());
-	const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
-	SessionPtr->OnJoinSessionCompleteDelegates.Remove(JoinSessionDelegateHandle);
+	bIsJoining = false;
 
-	if (Result == EOnJoinSessionCompleteResult::Success)
-	{
-		if (MemberSettings.Num() > 0)
-		{
-			bool bOk = AsyncAction_Helper::UpdateMemberAttributes(
-				WorldContextObject.Get(),
-				Player->GetLocalPlayer()->GetLocalPlayerIndex(),
-				SessionName,
-				MemberSettings);
-			if (!bOk)
-			{
-				UE_LOG(LogCommonSessionAsyncAction, Warning, TEXT("UAsyncAction_CreateSession::OnJoinSessionComplete: Failed to update member attributes"));
-			}
-		}
-
-		OnSuccess.Broadcast();
-
-		FString MapUrl;
-		SessionPtr->GetResolvedConnectString(SessionName, MapUrl);
-
-		UE_LOG(LogCommonSessionAsyncAction, Warning, TEXT("JoinSession Replacing RemoteAddr %s"), *MapUrl);
-		MapUrl = "127.0.0.1:7777";
-		Player->ClientTravel(MapUrl, TRAVEL_Absolute);
-
-		SetReadyToDestroy();
-	}
-	else
+	if (!WorldContextObject.IsValid() || bIsCancelled)
 	{
 		OnFailure.Broadcast();
 		SetReadyToDestroy();
+		return;
 	}
+
+	IOnlineSessionPtr SessionPtr = nullptr;
+	const IOnlineSubsystem *OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld());
+	if (OnlineSubsystem)
+	{
+		SessionPtr = OnlineSubsystem->GetSessionInterface();
+		if (SessionPtr)
+		{
+			SessionPtr->OnJoinSessionCompleteDelegates.Remove(JoinSessionDelegateHandle);
+		}
+	}
+
+	if (!bIsCancelled)
+	{
+		if (Result == EOnJoinSessionCompleteResult::Success)
+		{
+			if (MemberSettings.Num() > 0)
+			{
+				bool bOk = AsyncAction_Helper::UpdateMemberAttributes(
+					WorldContextObject.Get(),
+					Player->GetLocalPlayer()->GetLocalPlayerIndex(),
+					SessionName,
+					MemberSettings);
+				if (!bOk)
+				{
+					UE_LOG(LogCommonSessionAsyncAction, Warning, TEXT("UAsyncAction_CreateSession::OnJoinSessionComplete: Failed to update member attributes"));
+				}
+			}
+
+			OnSuccess.Broadcast();
+
+			FString MapUrl;
+			SessionPtr->GetResolvedConnectString(SessionName, MapUrl);
+
+			const UCommonUserSettings* Settings = GetDefault<UCommonUserSettings>();
+			if (Settings->bOverrideServerAddress)
+			{
+				MapUrl = Settings->ServerAddress;
+			}
+
+			Player->ClientTravel(MapUrl, TRAVEL_Absolute);
+		}
+		else
+		{
+			OnFailure.Broadcast();
+		}
+	}
+
+	SetReadyToDestroy();
+}
+
+void UAsyncAction_JoinSession::Cancel()
+{
+	bIsCancelled = true;
+
+	if (bIsJoining && WorldContextObject.IsValid())
+	{
+		if (const IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld()))
+		{
+			if (const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
+			{
+				SessionPtr->OnJoinSessionCompleteDelegates.Remove(JoinSessionDelegateHandle);
+			}
+		}
+	}
+
+	Super::Cancel();
 }

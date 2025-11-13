@@ -37,6 +37,9 @@ public:
 #endif
 	
 protected:
+
+	virtual void NativeConstruct() override;
+
 	/** The desired input mode to use while this UI is activated, for example do you want key presses to still reach the game/player controller? */
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	ELyraWidgetInputMode InputConfig = ELyraWidgetInputMode::Default;
@@ -44,4 +47,7 @@ protected:
 	/** The desired mouse behavior when the game gets input. */
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	EMouseCaptureMode GameMouseCaptureMode = EMouseCaptureMode::CapturePermanently;
+
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	bool bIgnoreLookInput = false;
 };

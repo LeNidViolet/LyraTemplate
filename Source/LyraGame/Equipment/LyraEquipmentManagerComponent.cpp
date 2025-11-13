@@ -178,22 +178,25 @@ void ULyraEquipmentManagerComponent::UnequipItem(ULyraEquipmentInstance* ItemIns
 	}
 }
 
-bool ULyraEquipmentManagerComponent::ReplicateSubobjects(UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags)
-{
-	bool WroteSomething = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
-
-	for (FLyraAppliedEquipmentEntry& Entry : EquipmentList.Entries)
-	{
-		ULyraEquipmentInstance* Instance = Entry.Instance;
-
-		if (IsValid(Instance))
-		{
-			WroteSomething |= Channel->ReplicateSubobject(Instance, *Bunch, *RepFlags);
-		}
-	}
-
-	return WroteSomething;
-}
+/*
+ * 这个实现是UE4古早写法, 如果启用了 bReplicateUsingRegisteredSubObjectList, 可以不写这个方法
+ */
+// bool ULyraEquipmentManagerComponent::ReplicateSubobjects(UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags)
+// {
+// 	bool WroteSomething = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
+//
+// 	for (FLyraAppliedEquipmentEntry& Entry : EquipmentList.Entries)
+// 	{
+// 		ULyraEquipmentInstance* Instance = Entry.Instance;
+//
+// 		if (IsValid(Instance))
+// 		{
+// 			WroteSomething |= Channel->ReplicateSubobject(Instance, *Bunch, *RepFlags);
+// 		}
+// 	}
+//
+// 	return WroteSomething;
+// }
 
 void ULyraEquipmentManagerComponent::InitializeComponent()
 {
@@ -217,6 +220,30 @@ void ULyraEquipmentManagerComponent::UninitializeComponent()
 
 	Super::UninitializeComponent();
 }
+
+
+/*
+
+ * ReadyForReplication() 和 ReplicateSubobjects() 两者都是为了确保 UObject 子对象正确网络复制, 但它们的角色和调用时机不同
+ *
+ * ReadyForReplication()
+ * 作用: 注册需要复制的子对象 调用 AddReplicatedSubObject()
+ * 调用时机: 在网络复制开始前(准备阶段)被调用一次, 通知引擎哪些子对象要被追踪复制
+ * 特点: 建立“已注册子对象列表”主要供 Iris 复制系统优化使用
+ *
+ * ReplicateSubobjects()
+ * 作用: 实际执行子对象属性复制的逻辑 调用 Channel->ReplicateSubobject()
+ * 调用时机: 每个网络复制周期，且对每个连接都调用，负责写入子对象的复制数据
+ * 特点: 兼容旧版方式, 也直接驱动子对象复制, 通过返回值告知是否写入任何内容
+ * 关系:
+ * ReadyForReplication() 负责提前注册子对象让系统知道“复制范围”, 属于准备和管理层面
+ * ReplicateSubobjects() 则在复制阶段一帧一帧地调用, 推进网络数据的实际传输
+ *
+ * 在 Iris 网络系统中, 推荐用 ReadyForReplication() + AddReplicatedSubObject() 注册子对象, 提高性能和代码清晰
+ * ReplicateSubobjects() 作为兼容方案或额外定制复制时仍会被调用。
+ *
+ */
+
 
 void ULyraEquipmentManagerComponent::ReadyForReplication()
 {

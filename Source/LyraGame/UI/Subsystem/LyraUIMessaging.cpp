@@ -6,7 +6,7 @@
 #include "NativeGameplayTags.h"
 #include "CommonLocalPlayer.h"
 #include "PrimaryGameLayout.h"
-#include "Widgets/CommonActivatableWidgetContainer.h"
+#include "LyraFrameworkSettings.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(LyraUIMessaging)
 
@@ -18,8 +18,8 @@ void ULyraUIMessaging::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	ConfirmationDialogClassPtr = ConfirmationDialogClass.LoadSynchronous();
-	ErrorDialogClassPtr = ErrorDialogClass.LoadSynchronous();
+	ConfirmationDialogClassPtr = GetDefault<ULyraFrameworkSettings>()->DefaultConfirmationDialogClass.LoadSynchronous();
+	ErrorDialogClassPtr = GetDefault<ULyraFrameworkSettings>()->DefaultErrorDialogClass.LoadSynchronous();
 }
 
 void ULyraUIMessaging::ShowConfirmation(UCommonGameDialogDescriptor* DialogDescriptor, FCommonMessagingResultDelegate ResultCallback)

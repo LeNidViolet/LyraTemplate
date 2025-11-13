@@ -4,21 +4,21 @@
 
 #include "CoreMinimal.h"
 #include "AsyncAction_Types.h"
-#include "Kismet/BlueprintAsyncActionBase.h"
+#include "Engine/CancellableAsyncAction.h"
 #include "AsyncAction_CreateLobby.generated.h"
 
-
+#define UE_API COMMONUSER_API
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCreateLobby_Delegate, const FString&, LobbyId);
 
 UCLASS(MinimalAPI)
-class UAsyncAction_CreateLobby : public UBlueprintAsyncActionBase
+class UAsyncAction_CreateLobby : public UCancellableAsyncAction
 {
 	GENERATED_BODY()
 
 public:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", AutoCreateRefTerm = "LobbySettings,MemberSettings", WorldContext = "WorldContextObject"), Category="CommonUser")
-	static COMMONUSER_API UAsyncAction_CreateLobby* CreateLobby(
+	static UE_API UAsyncAction_CreateLobby* CreateLobby(
 		UObject* WorldContextObject,
 		APlayerController* Player,
 		const TMap<FName, FEIKAttribute> LobbySettings,
@@ -39,8 +39,13 @@ protected:
 	TMap<FName, FEIKAttribute> LobbySettings;
 	TMap<FName, FEIKAttribute> MemberSettings;
 	bool bDelegateCalled = false;
+	bool bIsCancelled = false;
+	bool bIsCreating = false;
 
-	virtual void Activate() override;
-	void Execute_CreateLobby();
-	void OnCreateLobbyCompleted(FName SessionName, bool bWasSuccessful);
+	UE_API virtual void Activate() override;
+	UE_API void Execute_CreateLobby();
+	UE_API void OnCreateLobbyCompleted(FName SessionName, bool bWasSuccessful);
+	UE_API virtual void Cancel() override;
 };
+
+#undef UE_API

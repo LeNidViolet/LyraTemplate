@@ -20,7 +20,7 @@ public:
 	ULyraReticleWidgetBase(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	UFUNCTION(BlueprintImplementableEvent)
-	void OnWeaponInitialized();
+	void K2_OnWeaponInitialized();
 
 	UFUNCTION(BlueprintCallable)
 	void InitializeFromWeapon(ULyraWeaponInstance* InWeapon);

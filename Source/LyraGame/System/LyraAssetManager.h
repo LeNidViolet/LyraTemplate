@@ -85,15 +85,13 @@ protected:
 protected:
 
 	// Global game data asset to use.
-	UPROPERTY(Config)
-	TSoftObjectPtr<ULyraGameData> LyraGameDataPath;
+	TSoftObjectPtr<ULyraGameData> DefaultGameData;
 
 	// Loaded version of the game data
 	UPROPERTY(Transient)
 	TMap<TObjectPtr<UClass>, TObjectPtr<UPrimaryDataAsset>> GameDataMap;
 
 	// Pawn data used when spawning player pawns if there isn't one set on the player state.
-	UPROPERTY(Config)
 	TSoftObjectPtr<ULyraPawnData> DefaultPawnData;
 
 private:

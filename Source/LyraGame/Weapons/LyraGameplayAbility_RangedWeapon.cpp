@@ -536,7 +536,7 @@ void ULyraGameplayAbility_RangedWeapon::OnTargetDataReadyCallback(const FGamepla
 			WeaponData->AddSpread();
 
 			// Let the blueprint do stuff like apply effects to the targets
-			OnRangedWeaponTargetDataReady(LocalTargetDataHandle);
+			K2_OnRangedWeaponTargetDataReady(LocalTargetDataHandle);
 		}
 		else
 		{

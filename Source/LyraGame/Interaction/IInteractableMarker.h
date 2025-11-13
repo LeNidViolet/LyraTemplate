@@ -21,11 +21,11 @@ class IInteractableMarker
 public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category="WorldMarker")
-	void OnShowMarkerInteractablePrompt(UIndicatorDescriptor* Descriptor);
+	void K2_OnShowMarkerInteractablePrompt(UIndicatorDescriptor* Descriptor);
 
 	UFUNCTION(BlueprintImplementableEvent, Category="WorldMarker")
-	void OnHideMarkerInteractablePrompt(UIndicatorDescriptor* Descriptor);
+	void K2_OnHideMarkerInteractablePrompt(UIndicatorDescriptor* Descriptor);
 
 	UFUNCTION(BlueprintImplementableEvent, Category="WorldMarker")
-	FVector2D OnGetWidgetPixelSize();
+	FVector2D K2_OnGetWidgetPixelSize();
 };

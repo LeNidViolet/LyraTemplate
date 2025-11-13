@@ -5,18 +5,44 @@
 #include "Interaction/LyraWorldMarker.h"
 #include "Net/UnrealNetwork.h"
 
+#include  UE_INLINE_GENERATED_CPP_BY_NAME(LyraDSPlayerState)
 
 ALyraDSPlayerState::ALyraDSPlayerState(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 }
 
+void ALyraDSPlayerState::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
+void ALyraDSPlayerState::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// 销毁所有标记点 服务端销毁的是权威标记点 客户端销毁的是预测标记点
+	for (ALyraWorldMarker* MarkerActor : MarkerList)
+	{
+		if (IsValid(MarkerActor))
+		{
+			MarkerActor->Destroy();
+		}
+	}
+	MarkerList.Empty();
+
+	Super::EndPlay(EndPlayReason);
+}
+
+
+
+
 void ALyraDSPlayerState::AddWorldMarkerToCache(ALyraWorldMarker* MarkerActor)
 {
 	if (MarkerActor)
 	{
-		check(!HasWorldMarkerInCache(MarkerActor->GetMarkerId()));
-		MarkerList.Add(MarkerActor);
+		if (!HasWorldMarkerInCache(MarkerActor->GetMarkerId()))
+		{
+			MarkerList.Add(MarkerActor);
+		}
 	}
 }
 
@@ -38,7 +64,10 @@ void ALyraDSPlayerState::RemoveWorldMarkerFromCache(int32 MarkerId)
 	if (MarkerList.IsValidIndex(Index))
 	{
 		TObjectPtr<ALyraWorldMarker>& MarkerActor = MarkerList[Index];
-		MarkerActor->Destroy();
+		if (IsValid(MarkerActor))
+		{
+			MarkerActor->Destroy();
+		}
 		MarkerList.RemoveAt(Index);
 	}
 }
@@ -48,7 +77,7 @@ void ALyraDSPlayerState::RemoveWorldMarkerFromCache(ELyraWorldMarkerType MarkerT
 	for (int32 i = MarkerList.Num() - 1; i >= 0; --i)
 	{
 		TObjectPtr<ALyraWorldMarker>& MarkerActor = MarkerList[i];
-		if (MarkerActor && MarkerActor->GetMarkerType() == MarkerType)
+		if (IsValid(MarkerActor.Get()) && MarkerActor->GetMarkerType() == MarkerType)
 		{
 			MarkerActor->Destroy();
 			MarkerList.RemoveAt(i);
@@ -60,7 +89,7 @@ void ALyraDSPlayerState::RemoveAllWorldMarkers()
 {
 	for (TObjectPtr<ALyraWorldMarker>& MarkerActor : MarkerList)
 	{
-		if (MarkerActor)
+		if (IsValid(MarkerActor.Get()))
 		{
 			MarkerActor->Destroy();
 		}
@@ -82,7 +111,7 @@ ALyraWorldMarker* ALyraDSPlayerState::GetWorldMarkerForId(int32 MarkerId) const
 {
 	int32 Index = MarkerList.IndexOfByPredicate([MarkerId](const TObjectPtr<ALyraWorldMarker>& MarkerActor)
 	{
-		return MarkerActor && MarkerId == MarkerActor->GetMarkerId();
+		return IsValid(MarkerActor.Get()) && MarkerId == MarkerActor->GetMarkerId();
 	});
 
 	if (MarkerList.IsValidIndex(Index))
@@ -114,3 +143,4 @@ void ALyraDSPlayerState::OnRep_PlayerColor()
 {
 	OnPlayerColorChanged.Broadcast(PlayerColor);
 }
+

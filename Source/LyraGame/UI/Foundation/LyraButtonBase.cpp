@@ -9,7 +9,7 @@ void ULyraButtonBase::NativePreConstruct()
 {
 	Super::NativePreConstruct();
 
-	UpdateButtonStyle();
+	K2_OnUpdateButtonStyle();
 	RefreshButtonText();
 }
 
@@ -17,7 +17,7 @@ void ULyraButtonBase::UpdateInputActionWidget()
 {
 	Super::UpdateInputActionWidget();
 
-	UpdateButtonStyle();
+	K2_OnUpdateButtonStyle();
 	RefreshButtonText();
 }
 
@@ -37,18 +37,18 @@ void ULyraButtonBase::RefreshButtonText()
 			const FText ActionDisplayText = InputActionWidget->GetDisplayText();	
 			if (!ActionDisplayText.IsEmpty())
 			{
-				UpdateButtonText(ActionDisplayText);
+				K2_OnUpdateButtonText(ActionDisplayText);
 				return;
 			}
 		}
 	}
 	
-	UpdateButtonText(ButtonText);	
+	K2_OnUpdateButtonText(ButtonText);
 }
 
 void ULyraButtonBase::OnInputMethodChanged(ECommonInputType CurrentInputType)
 {
 	Super::OnInputMethodChanged(CurrentInputType);
 
-	UpdateButtonStyle();
+	K2_OnUpdateButtonStyle();
 }

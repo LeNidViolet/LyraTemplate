@@ -7,6 +7,8 @@
 
 #include "LyraQuickBarComponent.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class AActor;
 class ULyraEquipmentInstance;
 class ULyraEquipmentManagerComponent;
@@ -21,35 +23,38 @@ class ULyraQuickBarComponent : public UControllerComponent
 public:
 	ULyraQuickBarComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
-	UFUNCTION(BlueprintCallable, Category="Lyra")
-	void CycleActiveSlotForward();
+	UFUNCTION(BlueprintCallable, Category="QuickBar")
+	UE_API void CycleActiveSlotForward();
 
-	UFUNCTION(BlueprintCallable, Category="Lyra")
-	void CycleActiveSlotBackward();
+	UFUNCTION(BlueprintCallable, Category="QuickBar")
+	UE_API void CycleActiveSlotBackward();
 
-	UFUNCTION(Server, Reliable, BlueprintCallable, Category="Lyra")
-	void SetActiveSlotIndex(int32 NewIndex);
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category="QuickBar")
+	UE_API void SetActiveSlotIndex(int32 NewIndex);
 
-	UFUNCTION(BlueprintCallable, BlueprintPure=false)
-	TArray<ULyraInventoryItemInstance*> GetSlots() const
+	UFUNCTION(BlueprintCallable, BlueprintPure=false, Category="QuickBar")
+	UE_API TArray<ULyraInventoryItemInstance*> GetSlots() const
 	{
 		return Slots;
 	}
 
-	UFUNCTION(BlueprintCallable, BlueprintPure=false)
-	int32 GetActiveSlotIndex() const { return ActiveSlotIndex; }
+	UFUNCTION(BlueprintPure, Category="QuickBar")
+	UE_API int32 GetActiveSlotIndex() const { return ActiveSlotIndex; }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure = false)
-	ULyraInventoryItemInstance* GetActiveSlotItem() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure=false, Category="QuickBar")
+	UE_API ULyraInventoryItemInstance* GetActiveSlotItem() const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure=false)
-	int32 GetNextFreeItemSlot() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure=false, Category="QuickBar")
+	UE_API int32 GetNextFreeItemSlot() const;
 
-	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
-	void AddItemToSlot(int32 SlotIndex, ULyraInventoryItemInstance* Item);
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="QuickBar")
+	UE_API void AddItemToSlot(int32 SlotIndex, ULyraInventoryItemInstance* Item);
 
-	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
-	ULyraInventoryItemInstance* RemoveItemFromSlot(int32 SlotIndex);
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="QuickBar")
+	UE_API ULyraInventoryItemInstance* RemoveItemFromSlot(int32 SlotIndex);
+
+	UFUNCTION(BlueprintPure, Category="QuickBar")
+	UE_API int32 GetQuickBarCapacity() const { return NumSlots; }
 
 	virtual void BeginPlay() override;
 
@@ -60,8 +65,8 @@ private:
 	ULyraEquipmentManagerComponent* FindEquipmentManager() const;
 
 protected:
-	UPROPERTY()
-	int32 NumSlots = 3;
+	// Number of quickbar slots 具体数值从GameData中获取
+	int32 NumSlots = 0;
 
 	UFUNCTION()
 	void OnRep_Slots();
@@ -105,3 +110,5 @@ struct FLyraQuickBarActiveIndexChangedMessage
 	UPROPERTY(BlueprintReadOnly, Category=Inventory)
 	int32 ActiveIndex = 0;
 };
+
+#undef UE_API

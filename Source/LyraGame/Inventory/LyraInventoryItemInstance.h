@@ -45,12 +45,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category=Inventory)
 	bool HasStatTag(FGameplayTag Tag) const;
 
+	UFUNCTION(BlueprintPure, Category=Inventory)
 	TSubclassOf<ULyraInventoryItemDefinition> GetItemDef() const
 	{
 		return ItemDef;
 	}
 
-	UFUNCTION(BlueprintCallable, BlueprintPure=false, meta=(DeterminesOutputType=FragmentClass))
+	UFUNCTION(BlueprintCallable, Category=Inventory, meta=(DeterminesOutputType=FragmentClass))
 	const ULyraInventoryItemFragment* FindFragmentByClass(TSubclassOf<ULyraInventoryItemFragment> FragmentClass) const;
 
 	template <typename ResultClass>
@@ -66,6 +67,7 @@ private:
 	void SetItemDef(TSubclassOf<ULyraInventoryItemDefinition> InDef);
 
 	friend struct FLyraInventoryList;
+	friend class ULyraInventoryManagerComponent;
 
 private:
 	UPROPERTY(Replicated)

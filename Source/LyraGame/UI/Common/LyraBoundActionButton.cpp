@@ -15,14 +15,31 @@ void ULyraBoundActionButton::NativeConstruct()
 
 	if (UCommonInputSubsystem* InputSubsystem = GetInputSubsystem())
 	{
-		InputSubsystem->OnInputMethodChangedNative.AddUObject(this, &ThisClass::HandleInputMethodChanged);
-		HandleInputMethodChanged(InputSubsystem->GetCurrentInputType());
+		if (!InputMethodChangedHandle.IsValid())
+		{
+			InputMethodChangedHandle = InputSubsystem->OnInputMethodChangedNative.AddUObject(this, &ThisClass::HandleInputMethodChanged);
+			HandleInputMethodChanged(InputSubsystem->GetCurrentInputType());
+		}
 	}
+}
+
+void ULyraBoundActionButton::NativeDestruct()
+{
+	if (UCommonInputSubsystem* InputSubsystem = GetInputSubsystem())
+	{
+		if (InputMethodChangedHandle.IsValid())
+		{
+			InputSubsystem->OnInputMethodChangedNative.Remove(InputMethodChangedHandle);
+			InputMethodChangedHandle.Reset();
+		}
+	}
+
+	Super::NativeDestruct();
 }
 
 void ULyraBoundActionButton::HandleInputMethodChanged(ECommonInputType NewInputMethod)
 {
-	TSubclassOf<UCommonButtonStyle> NewStyle = nullptr;
+	TSubclassOf<UCommonButtonStyle> NewStyle;
 
 	if (NewInputMethod == ECommonInputType::Gamepad)
 	{

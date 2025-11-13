@@ -41,7 +41,7 @@ void UPickupableStatics::AddPickupToInventory(ULyraInventoryManagerComponent* In
 	{
 		const FInventoryPickup& PickupInventory = Pickup->GetPickupInventory();
 
-		for (const FPickupTemplate& Template : PickupInventory.Templates)
+		for (const FPickupDefinition& Template : PickupInventory.Definitions)
 		{
 			InventoryComponent->AddItemDefinition(Template.ItemDef, Template.StackCount);
 		}

@@ -126,7 +126,7 @@ public:
 	UE_API void UnequipItem(ULyraEquipmentInstance* ItemInstance);
 
 	//~UObject interface
-	UE_API virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
+	// UE_API virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 	//~End of UObject interface
 
 	//~UActorComponent interface
