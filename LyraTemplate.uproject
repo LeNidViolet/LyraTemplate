@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "{043B29C7-E640-E31B-B009-14888B784469}",
-	"Category": "Samples",
+	"EngineAssociation": "{267485B3-304D-EA5B-8B42-3F90647267CF}",
+	"Category": "",
 	"Description": "",
 	"Modules": [
 		{
@@ -39,14 +39,6 @@
 		{
 			"Name": "Gauntlet",
 			"Enabled": true
-		},
-		{
-			"Name": "D3DExternalGPUStatistics",
-			"Enabled": true,
-			"Optional": true,
-			"SupportedTargetPlatforms": [
-				"Win64"
-			]
 		},
 		{
 			"Name": "CommonLoadingScreen",
@@ -174,13 +166,6 @@
 		{
 			"Name": "GearVR",
 			"Enabled": false
-		},
-		{
-			"Name": "LuminPlatformFeatures",
-			"Enabled": false,
-			"SupportedTargetPlatforms": [
-				"Lumin"
-			]
 		},
 		{
 			"Name": "MLSDK",
@@ -361,6 +346,5 @@
 			"Enabled": false,
 			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/5cb2a394d0c04e73891762be4cbd7216"
 		}
-	],
-	"EpicSampleNameHash": "451731683"
+	]
 }

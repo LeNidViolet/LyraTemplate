@@ -4,6 +4,8 @@
 #include "Performance/LatencyMarkerModule.h"
 #include "Settings/LyraSettingsLocal.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LyraPlayerInput)
+
 ULyraPlayerInput::ULyraPlayerInput()
 	: Super()
 {

@@ -20,17 +20,17 @@ public:
 	UE_API UGameSettingValueDiscrete();
 
 	/** UGameSettingValueDiscrete */
-	UE_API virtual void SetDiscreteOptionByIndex(int32 Index) PURE_VIRTUAL(,);
+	virtual void SetDiscreteOptionByIndex(int32 Index) PURE_VIRTUAL(,);
 	
 	UFUNCTION(BlueprintCallable)
-	UE_API virtual int32 GetDiscreteOptionIndex() const PURE_VIRTUAL(,return INDEX_NONE;);
+	virtual int32 GetDiscreteOptionIndex() const PURE_VIRTUAL(,return INDEX_NONE;);
 
 	/** Optional */
 	UFUNCTION(BlueprintCallable)
 	virtual int32 GetDiscreteOptionDefaultIndex() const { return INDEX_NONE; }
 
 	UFUNCTION(BlueprintCallable)
-	UE_API virtual TArray<FText> GetDiscreteOptions() const PURE_VIRTUAL(,return TArray<FText>(););
+	virtual TArray<FText> GetDiscreteOptions() const PURE_VIRTUAL(,return TArray<FText>(););
 
 	UE_API virtual FString GetAnalyticsValue() const;
 };

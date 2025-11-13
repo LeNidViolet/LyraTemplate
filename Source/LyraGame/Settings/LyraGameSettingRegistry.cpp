@@ -23,7 +23,7 @@ ULyraGameSettingRegistry::ULyraGameSettingRegistry()
 
 ULyraGameSettingRegistry* ULyraGameSettingRegistry::Get(ULyraLocalPlayer* InLocalPlayer)
 {
-	ULyraGameSettingRegistry* Registry = FindObject<ULyraGameSettingRegistry>(InLocalPlayer, TEXT("LyraGameSettingRegistry"), true);
+	ULyraGameSettingRegistry* Registry = FindObject<ULyraGameSettingRegistry>(InLocalPlayer, TEXT("LyraGameSettingRegistry"), EFindObjectFlags::ExactClass);
 	if (Registry == nullptr)
 	{
 		Registry = NewObject<ULyraGameSettingRegistry>(InLocalPlayer, TEXT("LyraGameSettingRegistry"));

@@ -16,6 +16,8 @@
 #include "Inventory/LyraInventoryManagerComponent.h"
 #include "Character/LyraPawnExtensionComponent.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LyraGameplayRpcRegistrationComponent)
+
 ULyraGameplayRpcRegistrationComponent* ULyraGameplayRpcRegistrationComponent::ObjectInstance = nullptr;
 ULyraGameplayRpcRegistrationComponent* ULyraGameplayRpcRegistrationComponent::GetInstance()
 {

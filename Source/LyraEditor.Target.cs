@@ -7,8 +7,9 @@ public class LyraEditorTarget : TargetRules
 {
 	public LyraEditorTarget(TargetInfo Target) : base(Target)
 	{
-		Type = TargetType.Editor;
+		DefaultBuildSettings = BuildSettingsVersion.V6;
 
+		Type = TargetType.Editor;
 		ExtraModuleNames.AddRange(new string[] { "LyraGame", "LyraEditor" });
 
 		if (!bBuildAllModules)

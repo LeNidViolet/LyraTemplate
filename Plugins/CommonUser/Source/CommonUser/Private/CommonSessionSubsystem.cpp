@@ -1291,7 +1291,7 @@ void UCommonSessionSubsystem::ConnectToHostReservationBeacon()
 
 	ReservationBeaconClient->OnReservationRequestComplete().BindWeakLambda(this, [this](EPartyReservationResult::Type ReservationResponse)
 		{
-			if (ReservationResponse == EPartyReservationResult::ReservationAccepted)
+			if (ReservationResponse == EPartyReservationResult::ReservationAccepted || ReservationResponse == EPartyReservationResult::ReservationDuplicate)
 			{
 				FOnlineResultInformation JoinSessionResult;
 				JoinSessionResult.bWasSuccessful = true;

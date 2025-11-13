@@ -91,6 +91,8 @@
 #include "Character/LyraCharacter.h"
 #include "Player/LyraPlayerController.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LyraReplicationGraph)
+
 DEFINE_LOG_CATEGORY( LogLyraRepGraph );
 
 namespace Lyra::RepGraph
@@ -148,7 +150,12 @@ namespace Lyra::RepGraph
 
 			UE_LOG(LogLyraRepGraph, Display, TEXT("Replication graph is enabled for %s in world %s."), *GetNameSafe(ForNetDriver), *GetPathNameSafe(World));
 
-			TSubclassOf<ULyraReplicationGraph> GraphClass = LyraRepGraphSettings->DefaultReplicationGraphClass.TryLoadClass<ULyraReplicationGraph>();
+			TSubclassOf<ULyraReplicationGraph> GraphClass;
+			if (LyraRepGraphSettings)
+			{
+				GraphClass = LyraRepGraphSettings->DefaultReplicationGraphClass.TryLoadClass<ULyraReplicationGraph>();
+			}
+
 			if (GraphClass.Get() == nullptr)
 			{
 				GraphClass = ULyraReplicationGraph::StaticClass();

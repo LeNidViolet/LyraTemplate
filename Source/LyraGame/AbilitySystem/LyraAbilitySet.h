@@ -31,7 +31,7 @@ public:
 
 	// Gameplay ability to grant.
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<ULyraGameplayAbility> Ability = nullptr;
+	TSubclassOf<ULyraGameplayAbility> Ability;
 
 	// Level of ability to grant.
 	UPROPERTY(EditDefaultsOnly)
@@ -57,7 +57,7 @@ public:
 
 	// Gameplay effect to grant.
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UGameplayEffect> GameplayEffect = nullptr;
+	TSubclassOf<UGameplayEffect> GameplayEffect;
 
 	// Level of gameplay effect to grant.
 	UPROPERTY(EditDefaultsOnly)

@@ -27,13 +27,13 @@ public:
 	UE_API UGameSettingValue();
 
 	/** Stores an initial value for the setting.  This will be called on initialize, but should also be called if you 'apply' the setting. */
-	UE_API virtual void StoreInitial() PURE_VIRTUAL(, );
+	virtual void StoreInitial() PURE_VIRTUAL(, );
 
 	/** Resets the property to the default. */
-	UE_API virtual void ResetToDefault() PURE_VIRTUAL(, );
+	virtual void ResetToDefault() PURE_VIRTUAL(, );
 
 	/** Restores the setting to the initial value, this is the value when you open the settings before making any tweaks. */
-	UE_API virtual void RestoreToInitial() PURE_VIRTUAL(, );
+	virtual void RestoreToInitial() PURE_VIRTUAL(, );
 
 protected:
 	UE_API virtual void OnInitialized() override;

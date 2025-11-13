@@ -51,7 +51,7 @@ protected:
 	UE_API UGameSettingCollection* GetSettingCollection(FName SettingDevName, bool& HasAnySettings); 
 
 protected:
-	UE_API virtual UGameSettingRegistry* CreateRegistry() PURE_VIRTUAL(, return nullptr;);
+	virtual UGameSettingRegistry* CreateRegistry() PURE_VIRTUAL(, return nullptr;);
 
 	template <typename GameSettingRegistryT = UGameSettingRegistry>
 	GameSettingRegistryT* GetRegistry() const { return Cast<GameSettingRegistryT>(const_cast<UGameSettingScreen*>(this)->GetOrCreateRegistry()); }

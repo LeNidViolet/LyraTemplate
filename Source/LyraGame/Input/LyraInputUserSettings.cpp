@@ -2,6 +2,8 @@
 
 #include "Input/LyraInputUserSettings.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LyraInputUserSettings)
+
 void ULyraInputUserSettings::ApplySettings()
 {
 	Super::ApplySettings();

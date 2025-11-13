@@ -66,7 +66,7 @@ public:
 	}
 
 protected:
-	UE_API virtual void OnInitialize(ULocalPlayer* InLocalPlayer) PURE_VIRTUAL(, )
+	virtual void OnInitialize(ULocalPlayer* InLocalPlayer) PURE_VIRTUAL(, )
 
 	virtual void OnSettingApplied(UGameSetting* Setting) { }
 	

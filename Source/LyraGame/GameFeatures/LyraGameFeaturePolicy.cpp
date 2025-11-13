@@ -24,7 +24,7 @@ void ULyraGameFeaturePolicy::InitGameFeatureManager()
 	UGameFeaturesSubsystem& Subsystem = UGameFeaturesSubsystem::Get();
 	for (UObject* Observer : Observers)
 	{
-		Subsystem.AddObserver(Observer);
+		Subsystem.AddObserver(Observer, UGameFeaturesSubsystem::EObserverPluginStateUpdateMode::CurrentAndFuture);
 	}
 
 	Super::InitGameFeatureManager();

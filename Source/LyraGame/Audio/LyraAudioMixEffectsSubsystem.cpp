@@ -51,6 +51,8 @@ bool ULyraAudioMixEffectsSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 
 void ULyraAudioMixEffectsSubsystem::PostInitialize()
 {
+	Super::PostInitialize();
+
 	if (const ULyraAudioSettings* LyraAudioSettings = GetDefault<ULyraAudioSettings>())
 	{
 		if (UObject* ObjPath = LyraAudioSettings->DefaultControlBusMix.TryLoad())
@@ -220,6 +222,8 @@ void ULyraAudioMixEffectsSubsystem::PostInitialize()
 
 void ULyraAudioMixEffectsSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
+	Super::OnWorldBeginPlay(InWorld);
+
 	if (const UWorld* World = InWorld.GetWorld())
 	{
 		// Activate the default base mix

@@ -7,6 +7,8 @@
 #include "Engine/LocalPlayer.h"
 #include "EnhancedInputSubsystems.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LyraActionWidget)
+
 FSlateBrush ULyraActionWidget::GetIcon() const
 {
 	// If there is an Enhanced Input action associated with this widget, then search for any

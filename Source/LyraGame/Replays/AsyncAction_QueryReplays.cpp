@@ -4,6 +4,7 @@
 
 #include "GameFramework/PlayerController.h"
 #include "LyraReplaySubsystem.h"
+#include "Templates/Greater.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(AsyncAction_QueryReplays)
 
