@@ -35,7 +35,7 @@ void ULyraUINaviSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 				if (!UINaviFocusEventListener.IsValid())
 				{
 					UINaviFocusEventListener = MessageSubsystem->RegisterListener<FOnUIFocusNaviParameters>(
-						LyraGameplayTags::UI_Focus_Navi,
+						LyraGameplayTags::Gameplay_Message_UI_FocusNavi,
 						this,
 						&ThisClass::HandleUIFocusNaviEvent
 					);

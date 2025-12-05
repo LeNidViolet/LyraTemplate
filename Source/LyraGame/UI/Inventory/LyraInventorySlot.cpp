@@ -45,7 +45,7 @@ void ULyraInventorySlot::RegisterMessageHandlers()
 			{
 				// 如果道具/数量发生变化, 则更新 UI
 				InventoryStackChangedEventListener = MessageSubsystem->RegisterListener<FOnInventoryStackChangeParameters>(
-					LyraGameplayTags::Inventory_Stack_Changed,
+					LyraGameplayTags::Gameplay_Message_Inventory_StackChanged,
 					this,
 					&ThisClass::HandleInventoryStackChangeEvent);
 			}

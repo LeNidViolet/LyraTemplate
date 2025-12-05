@@ -63,7 +63,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCollectableFinished);
  * 1. 直接在关卡中放置 LyraWorldCollectable 实例, 并在蓝图中设置 StaticInventory 属性来指定物品
  * 2. 通过 SpawnCollectable 静态函数动态生成物品实例
  */
-UCLASS(BlueprintType, Blueprintable, Abstract)
+UCLASS(BlueprintType, Blueprintable)
 class ALyraWorldCollectable : public ALyraWorldInteractable, public IPickupable
 {
 	GENERATED_BODY()
@@ -121,32 +121,29 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Collectable", meta=(WorldContext="WorldContextObject"))
 	static UE_API ALyraWorldCollectable* SpawnCollectableForDefinition(
 		UObject* WorldContextObject,
-		TSubclassOf<ALyraWorldCollectable> WorldCollectableClass,
 		TSubclassOf<ULyraInventoryItemDefinition> ItemDefinition,
 		int32 SpawnCount,
-		FVector& Location,
-		FRotator& Rotation,
+		const FVector& Location,
+		const FRotator& Rotation,
 		APawn* InstigatorPawn = nullptr,
 		AActor* OwnerActor = nullptr);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Collectable", meta=(WorldContext="WorldContextObject"))
 	static UE_API ALyraWorldCollectable* SpawnCollectableForInstance(
 		UObject* WorldContextObject,
-		TSubclassOf<ALyraWorldCollectable> WorldCollectableClass,
 		ULyraInventoryItemInstance* ItemInstance,
 		int32 SpawnCount,
-		FVector& Location,
-		FRotator& Rotation,
+		const FVector& Location,
+		const FRotator& Rotation,
 		APawn* InstigatorPawn = nullptr,
 		AActor* OwnerActor = nullptr);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Collectable", meta=(WorldContext="WorldContextObject"))
 	static UE_API ALyraWorldCollectable* SpawnCollectable(
 		UObject* WorldContextObject,
-		TSubclassOf<ALyraWorldCollectable> WorldCollectableClass,
 		FInventoryPickup InventoryPickup,
-		FVector& Location,
-		FRotator& Rotation,
+		const FVector& Location,
+		const FRotator& Rotation,
 		APawn* InstigatorPawn = nullptr,
 		AActor* OwnerActor = nullptr);
 
@@ -214,7 +211,7 @@ protected:
 
 	// 销毁等待时长
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Collectable")
-	float LifeAfterFinished = 1.0f;
+	float LifeAfterFinished = 2.0f;
 
 	// 拾取时播放的GameplayCue标签
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Collectable", meta=(Categories="GameplayCue"))
@@ -227,6 +224,7 @@ protected:
 private:
 	void OnCoolingDownTimeout(UAbilitySystemComponent* ASC, const APawn* InstigatorPawn);
 	void FitCollisionToMesh();
+	void HandleVisualUpdate();
 };
 
 #undef UE_API

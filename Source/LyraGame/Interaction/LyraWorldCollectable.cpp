@@ -7,6 +7,7 @@
 #include "Async/TaskGraphInterfaces.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Inventory/InventoryFragment_PickupInfo.h"
 #include "Inventory/LyraInventoryItemDefinition.h"
 #include "Inventory/LyraInventoryItemInstance.h"
 #include "Net/UnrealNetwork.h"
@@ -123,7 +124,7 @@ void ALyraWorldCollectable::ResetStaticMesh()
 	// 默认Cue通过Mesh来做拾取的效果, 所以这里需要重置 Mesh 的 Transform
 	// 如果换成了其他方式的Cue, 这里的操作也没有副作用
 
-	if (GetNetMode() != NM_DedicatedServer)
+	if (!IsNetMode(NM_DedicatedServer))
 	{
 		// 只有客户端 Mesh 会变更Transform
 		MeshComp->SetVisibility(true, true);
@@ -146,18 +147,63 @@ FInventoryPickup ALyraWorldCollectable::GetPickupInventory() const
 
 void ALyraWorldCollectable::SetPickupInventory(const FInventoryPickup& InInventoryPickup)
 {
-	StaticInventory = InInventoryPickup;
+	if (HasAuthority())
+	{
+		StaticInventory = InInventoryPickup;
+        OnRep_StaticInventory();
+	}
+}
+
+void ALyraWorldCollectable::HandleVisualUpdate()
+{
+	// 进行简单的可视化更新
+
+	TSubclassOf<ULyraInventoryItemDefinition> ItemDefinition;
+	if (StaticInventory.Definitions.Num() > 0)
+	{
+		ItemDefinition = StaticInventory.Definitions[0].ItemDef;
+	}
+	if (StaticInventory.Instances.Num() > 0)
+	{
+		//这里即使 Num > 0, 对应的 Instance 也可能是 nullptr !
+		if (IsValid(StaticInventory.Instances[0].Item.Get()))
+		{
+			ItemDefinition = StaticInventory.Instances[0].Item->GetItemDef();
+		}
+	}
+	if (ItemDefinition)
+	{
+		ULyraInventoryItemDefinition* CDO = ItemDefinition.GetDefaultObject();
+		const ULyraInventoryItemFragment* Fragment = CDO->FindFragmentByClass(UInventoryFragment_PickupInfo::StaticClass());
+		if (Fragment)
+		{
+			const UInventoryFragment_PickupInfo* PickupInfo = Cast<UInventoryFragment_PickupInfo>(Fragment);
+			if (PickupInfo->DisplayMesh)
+			{
+				MeshComp->SetStaticMesh(PickupInfo->DisplayMesh.Get());
+			}
+		}
+	}
 }
 
 
 void ALyraWorldCollectable::OnRep_StaticInventory()
 {
-	// 通知客户端进行可视化更新
-	K2_OnUpdated();
-	OnUpdated.Broadcast();
+	if (!IsNetMode(NM_DedicatedServer))
+	{
+		// 目前只在 Standalone / Client 进行可视化更新
 
-	// 蓝图可视化完成之后, 适配碰撞体
-	FitCollisionToMesh();
+		HandleVisualUpdate();
+
+		// 蓝图可在此进行可视化处理
+		K2_OnUpdated();
+		OnUpdated.Broadcast();
+
+		// TODO 注意碰撞体只在 Standalone / Client 进行了修正 目前碰撞体只为了交互检测使用
+		// 如果后面服务端需要碰撞体来处理业务, 这里的逻辑需要修正
+		// 可视化完成之后, 适配碰撞体
+		FitCollisionToMesh();
+	}
 }
 
 void ALyraWorldCollectable::OnRep_CollectableStateData()
@@ -388,11 +434,10 @@ void ALyraWorldCollectable::NotifyFinished(UAbilitySystemComponent* ASC, const A
 
 ALyraWorldCollectable* ALyraWorldCollectable::SpawnCollectableForDefinition(
 	UObject* WorldContextObject,
-	TSubclassOf<ALyraWorldCollectable> WorldCollectableClass,
 	TSubclassOf<ULyraInventoryItemDefinition> ItemDefinition,
 	int32 SpawnCount,
-	FVector& Location,
-	FRotator& Rotation,
+	const FVector& Location,
+	const FRotator& Rotation,
 	APawn* InstigatorPawn,
 	AActor* OwnerActor)
 {
@@ -404,7 +449,6 @@ ALyraWorldCollectable* ALyraWorldCollectable::SpawnCollectableForDefinition(
 
 	return SpawnCollectable(
 		WorldContextObject,
-		WorldCollectableClass,
 		InventoryPickup,
 		Location,
 		Rotation,
@@ -414,11 +458,10 @@ ALyraWorldCollectable* ALyraWorldCollectable::SpawnCollectableForDefinition(
 
 ALyraWorldCollectable* ALyraWorldCollectable::SpawnCollectableForInstance(
 	UObject* WorldContextObject,
-	TSubclassOf<ALyraWorldCollectable> WorldCollectableClass,
 	ULyraInventoryItemInstance* ItemInstance,
 	int32 SpawnCount,
-	FVector& Location,
-	FRotator& Rotation,
+	const FVector& Location,
+	const FRotator& Rotation,
 	APawn* InstigatorPawn,
 	AActor* OwnerActor)
 {
@@ -430,7 +473,6 @@ ALyraWorldCollectable* ALyraWorldCollectable::SpawnCollectableForInstance(
 
 	return SpawnCollectable(
 		WorldContextObject,
-		WorldCollectableClass,
 		InventoryPickup,
 		Location,
 		Rotation,
@@ -440,14 +482,13 @@ ALyraWorldCollectable* ALyraWorldCollectable::SpawnCollectableForInstance(
 
 ALyraWorldCollectable* ALyraWorldCollectable::SpawnCollectable(
 	UObject* WorldContextObject,
-	TSubclassOf<ALyraWorldCollectable> WorldCollectableClass,
 	FInventoryPickup InventoryPickup,
-	FVector& Location,
-	FRotator& Rotation,
+	const FVector& Location,
+	const FRotator& Rotation,
 	APawn* InstigatorPawn,
 	AActor* OwnerActor)
 {
-	if (!WorldContextObject || !WorldCollectableClass)
+	if (!WorldContextObject)
 	{
 		return nullptr;
 	}
@@ -455,6 +496,8 @@ ALyraWorldCollectable* ALyraWorldCollectable::SpawnCollectable(
 	{
 		return nullptr;
 	}
+
+	TSubclassOf<ALyraWorldCollectable> WorldCollectableClass;
 	// 需要每一个 Definition 和 Instance 都合法
 	for (int32 i = 0; i < InventoryPickup.Definitions.Num(); i++)
 	{
@@ -463,6 +506,8 @@ ALyraWorldCollectable* ALyraWorldCollectable::SpawnCollectable(
 		{
 			return nullptr;
 		}
+
+		WorldCollectableClass = InventoryPickup.Definitions[i].ItemDef.GetDefaultObject()->WorldCollectableClass;
 	}
 	for (int32 i = 0; i < InventoryPickup.Instances.Num(); i++)
 	{
@@ -470,6 +515,7 @@ ALyraWorldCollectable* ALyraWorldCollectable::SpawnCollectable(
 		{
 			return nullptr;
 		}
+		WorldCollectableClass = InventoryPickup.Instances[i].Item.Get()->GetItemDef().GetDefaultObject()->WorldCollectableClass;
 	}
 
 	UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::ReturnNull);
@@ -484,26 +530,29 @@ ALyraWorldCollectable* ALyraWorldCollectable::SpawnCollectable(
 	}
 
 
-	FTransform SpawnTransform(Rotation, Location);
-	ALyraWorldCollectable* SpawnedCollectable =
-		World->SpawnActorDeferred<ALyraWorldCollectable>(
-			WorldCollectableClass,
-			SpawnTransform,
-			OwnerActor,
-			InstigatorPawn,
-			ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn
-			// ,ESpawnActorScaleMethod::OverrideRootScale
-			// 最后一个参数可以设置缩放规则
-		);
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = OwnerActor;
+	SpawnParams.Instigator = InstigatorPawn;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	ALyraWorldCollectable* SpawnedCollectable = World->SpawnActor<ALyraWorldCollectable>(
+		WorldCollectableClass,
+		Location,
+		Rotation,
+		SpawnParams);
+	if (!SpawnedCollectable)
+	{
+		return nullptr;
+	}
 
-	// 设置生成数量
-	SpawnedCollectable->StaticInventory = InventoryPickup;
+	// 如果是通过 ItemInstance 创建的 Actor 这里需要转移所有权以及复制队列 以确保 ItemInstance 能够正确复制到客户端
+	for (const FPickupInstance& PickupInstance : InventoryPickup.Instances)
+	{
+		ULyraInventoryItemInstance* ItemInstance = PickupInstance.Item.Get();
+		ItemInstance->Rename(nullptr, SpawnedCollectable);
+		SpawnedCollectable->AddReplicatedSubObject(PickupInstance.Item.Get());
+	}
 
-	// 这里有机会在BeginPlay之前进行更多的初始化操作
-	SpawnedCollectable->SetCanBeDamaged(false);
-
-	// 触发完成生成 此时 BeginPlay() 等生命周期函数会被触发
-	SpawnedCollectable->FinishSpawning(SpawnTransform);
+	SpawnedCollectable->SetPickupInventory(InventoryPickup);
 
 	return SpawnedCollectable;
 }

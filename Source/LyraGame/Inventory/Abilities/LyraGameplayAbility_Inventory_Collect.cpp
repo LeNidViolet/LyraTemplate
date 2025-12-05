@@ -1,15 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "LyraGameplayAbility_Interact_Collect.h"
+#include "LyraGameplayAbility_Inventory_Collect.h"
 
 #include "AbilitySystemComponent.h"
 #include "LyraGameplayTags.h"
 #include "Interaction/LyraWorldCollectable.h"
-#include "Inventory/LyraInventoryItemDefinition.h"
 #include "Inventory/LyraInventoryManagerComponent.h"
 
-ULyraGameplayAbility_Interact_Collect::ULyraGameplayAbility_Interact_Collect(const FObjectInitializer& ObjectInitializer)
+ULyraGameplayAbility_Inventory_Collect::ULyraGameplayAbility_Inventory_Collect(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	bServerRespectsRemoteAbilityCancellation = false;
@@ -18,7 +17,7 @@ ULyraGameplayAbility_Interact_Collect::ULyraGameplayAbility_Interact_Collect(con
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 }
 
-void ULyraGameplayAbility_Interact_Collect::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
+void ULyraGameplayAbility_Inventory_Collect::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                                             const FGameplayAbilityActorInfo* ActorInfo,
                                                             const FGameplayAbilityActivationInfo ActivationInfo,
                                                             const FGameplayEventData* TriggerEventData)

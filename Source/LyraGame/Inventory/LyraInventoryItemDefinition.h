@@ -6,6 +6,7 @@
 
 #include "LyraInventoryItemDefinition.generated.h"
 
+class ALyraWorldCollectable;
 template <typename T> class TSubclassOf;
 
 class ULyraInventoryItemInstance;
@@ -107,6 +108,10 @@ public:
 	// 物品是否支持自动拾取
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Inventory")
 	bool bAutoPickup = false;
+
+	// 物品掉落时使用的 WorldCollectable 类
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Inventory")
+	TSubclassOf<ALyraWorldCollectable> WorldCollectableClass;
 
 	// 物品碎片列表
 	// Item fragment list

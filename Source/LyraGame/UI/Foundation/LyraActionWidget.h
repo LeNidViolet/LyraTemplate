@@ -5,6 +5,8 @@
 #include "CommonActionWidget.h"
 #include "LyraActionWidget.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UEnhancedInputLocalPlayerSubsystem;
 class UInputAction;
 
@@ -24,8 +26,18 @@ public:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	const TObjectPtr<UInputAction> AssociatedInputAction;
 
-private:
+protected:
+	UE_API virtual void OnActionProgress(float HeldPercent) override;
+	UE_API virtual void OnActionComplete() override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=ActionWidget)
+	bool bOverwriteHoldTintColor = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=ActionWidget, meta=(EditCondition="bOverwriteHoldTintColor"))
+	FSlateColor NewTintColor = FSlateColor(FLinearColor::White);
+
+private:
 	UEnhancedInputLocalPlayerSubsystem* GetEnhancedInputSubsystem() const;
-	
 };
+
+#undef UE_API

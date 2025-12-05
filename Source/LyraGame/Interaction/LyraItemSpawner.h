@@ -28,10 +28,6 @@ protected:
 	UE_API virtual void BeginPlay() override;
 	UE_API virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	// 指定要使用的可拾取类, 必须是 ALyraWorldCollectable 的子类
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
-	TSubclassOf<ALyraWorldCollectable> CollectableClass;
-
 	// 指定要生成的物品类
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
 	TSubclassOf<ULyraInventoryItemDefinition> ItemDefinition;

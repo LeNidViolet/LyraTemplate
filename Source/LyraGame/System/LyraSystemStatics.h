@@ -73,4 +73,13 @@ public:
 		float MinRadius=50.f,
 		float MaxRadius=200.f,
 		float ConeHalfAngle=60.f);
+
+
+	static float SampleCurveValue(const UCurveFloat* Curve, float X, float DefaultValue = 0.0f);
+
+	/**
+	 * 使用曲线计算丢弃数量
+	 */
+	UFUNCTION(BlueprintCallable, Category="Inventory")
+	static int32 CalculateDropCount(int32 CurrentStackCount, UCurveFloat* DropCurve);
 };

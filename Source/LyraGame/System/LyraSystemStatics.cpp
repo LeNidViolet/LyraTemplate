@@ -264,3 +264,33 @@ bool ULyraSystemStatics::FindValidSpawnLocationInCone(
     return true;
 }
 
+float ULyraSystemStatics::SampleCurveValue(const UCurveFloat* Curve, float X, float DefaultValue)
+{
+	if (!Curve)
+	{
+		return DefaultValue;
+	}
+
+	return Curve->GetFloatValue(X);
+}
+
+int32 ULyraSystemStatics::CalculateDropCount(int32 CurrentStackCount, UCurveFloat* DropCurve)
+{
+	if (CurrentStackCount <= 0)
+	{
+		return 0;
+	}
+
+	const float Value = SampleCurveValue(DropCurve, static_cast<float>(CurrentStackCount), 1.0f);
+
+	if (Value < 1.0f && Value > 0.0f)
+	{
+		const int32 Count = FMath::FloorToInt(CurrentStackCount * Value);
+		return FMath::Max(1, Count);
+	}
+	else
+	{
+		return FMath::Clamp(FMath::RoundToInt(Value), 1, CurrentStackCount);
+	}
+}
+

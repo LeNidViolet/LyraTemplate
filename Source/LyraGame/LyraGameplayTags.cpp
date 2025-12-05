@@ -68,13 +68,15 @@ namespace LyraGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Marker_Discover, "Gameplay.Message.Marker.Discover", "Indicates a new world marker has been discovered, typically followed by an Add request.");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Callout_Display, "Gameplay.Message.Callout.Display", "Indicates a request to display a UI callout.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Session_MemberEvent, "Gameplay.Message.Session.MemberEvent", "Toast message for when a member joins or leaves the active game session.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Lobby_MemberEvent, "Gameplay.Message.Lobby.MemberEvent", "Toast message for when a member joins or leaves the current lobby.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Lobby_Countdown, "Gameplay.Message.Lobby.Countdown", "Toast message for displaying a countdown timer in the lobby.");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(ToastMessage_Lobby_MemberEvent, "ToastMessage.Lobby.MemberEvent", "Toast message for when a member joins or leaves the current lobby.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(ToastMessage_Lobby_Countdown, "ToastMessage.Lobby.Countdown", "Toast message for displaying a countdown timer in the lobby.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(ToastMessage_Session_MemberEvent, "ToastMessage.Session.MemberEvent", "Toast message for when a member joins or leaves the active game session.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(UI_Focus_Navi, "UI.Focus.Navi", "Used to indicate which UI element currently has navigation focus.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_Inventory_StackChanged, "Gameplay.Message.Inventory.StackChanged", "Indicates that an inventory stack has changed.");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Inventory_Stack_Changed, "Inventory.Stack.Changed", "Indicates that an inventory stack has changed.");
+
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Gameplay_Message_UI_FocusNavi, "Gameplay.Message.UI.FocusNavi", "Used to indicate which UI element currently has navigation focus.");
+
 
 
 	// Interaction Ability Tags
@@ -84,6 +86,12 @@ namespace LyraGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Interaction_Pickup_Active, "Ability.Interaction.Pickup.Active", "Ability tag for active pickups (e.g., player-initiated).");
 	// 拾取道具(自动)
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Interaction_Pickup_Auto, "Ability.Interaction.Pickup.Auto", "Ability tag for automatic pickups (e.g., proximity-based).");
+
+	// 触发丢弃道具技能 丢弃部分 / 全部
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Inventory_DropItem, "GameplayEvent.Inventory.DropItem", "Event to trigger dropping an item from the inventory.");
+	// 触发交换道具位置技能
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Inventory_SwapItem, "GameplayEvent.Inventory.SwapItem", "Event to trigger swapping item positions within the inventory.");
+
 
 
 	// Unreal Movement Modes

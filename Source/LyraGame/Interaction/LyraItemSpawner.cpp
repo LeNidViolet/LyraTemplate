@@ -50,7 +50,7 @@ void ALyraItemSpawner::SpawnItem()
 		return;
 	}
 
-	if (!ItemDefinition || !CollectableClass)
+	if (!ItemDefinition)
 	{
 		return;
 	}
@@ -73,7 +73,6 @@ void ALyraItemSpawner::SpawnItem()
 
 	SpawnedActor = ALyraWorldCollectable::SpawnCollectableForDefinition(
 		this,
-		CollectableClass,
 		ItemDefinition,
 		SpawnCount,
 		SpawnLocation,

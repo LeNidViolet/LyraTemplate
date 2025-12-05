@@ -4,12 +4,14 @@
 
 #include "GameplayTagContainer.h"
 #include "Engine/DataAsset.h"
+#include "Interaction/LyraWorldCollectable.h"
 #include "Interaction/LyraWorldMarker.h"
 
 #include "LyraGameData.generated.h"
 
 #define UE_API LYRAGAME_API
 
+class ALyraWorldCollectable;
 enum class ELyraWorldMarkerType : uint8;
 class UIndicatorDescriptor;
 
@@ -171,25 +173,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Interact")
 	float InteractScanRange = 300.f;
 
-	// 是否启用掉落物下落效果
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interact|Collectable")
-	bool bEnableCollectableFallEffect = true;
-
-	// 掉落物距离地面高度
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interact|Collectable")
-	float CollectableHoverHeight = 50.f;
-
-	// 掉落物下落速度
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interact|Collectable")
-	float CollectableFallSpeed = 32.f;
-
-	// 掉落物下落速率
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interact|Collectable")
-	float CollectableFallRate = 0.1f;
-
-	// 自动拾取范围
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interact|Collectable")
-	float CollectableAutoPickupRadius = 300.f;
 
 
 
@@ -197,9 +180,26 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
 	int32 InventoryMaxCapacity = 30;
 
+	// Inventory Screen 每一行排列几个槽位
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Inventory")
+	int32 InventorySlotsPerRow = 8;
+
 	// 快捷栏槽位数量
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "QuickBar")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
 	int32 QuickBarMaxCapacity = 5;
+
+	// QuickBar Screen 每一行排列几个槽位
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Inventory")
+	int32 QuickBarSlotsPerRow = 8;
+
+	// 丢弃物品的数量曲线 横轴是当前持有量, 纵轴是 丢弃比例 (0.0 - 1.0) 或者 丢弃数量
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Inventory")
+	TObjectPtr<UCurveFloat> InventoryDropCurve;
+
+
+	// 默认使用的可拾取类类型
+	// UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="WorldCollectable")
+	// TSubclassOf<ALyraWorldCollectable> WorldCollectableClass = ALyraWorldCollectable::StaticClass();
 };
 
 #undef UE_API

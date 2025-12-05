@@ -23,7 +23,7 @@ struct FLyraGameplayAbilityTargetData_Marker : public FGameplayAbilityTargetData
 	int32 AimingMarkerId = -1; // 当前瞄准的标记 ID (将要移除标记)
 
 	UPROPERTY()
-	TWeakObjectPtr<AActor> TargetActor; // 标记位置所属于 Actor (将要添加标记)
+	TObjectPtr<AActor> TargetActor; // 标记位置所属于 Actor (将要添加标记)
 
 	UPROPERTY()
 	FVector TargetLocation = FVector::ZeroVector;  // 标记位置 (将要添加标记)

@@ -41,3 +41,35 @@ UEnhancedInputLocalPlayerSubsystem* ULyraActionWidget::GetEnhancedInputSubsystem
 	}
 	return nullptr;
 }
+
+
+
+
+void ULyraActionWidget::OnActionProgress(float HeldPercent)
+{
+	if (HeldPercent > 0)
+	{
+		if (bOverwriteHoldTintColor)
+		{
+			Icon.TintColor = NewTintColor;
+		}
+	}
+	else
+	{
+		if (bOverwriteHoldTintColor)
+		{
+			Icon.TintColor = FSlateColor(FLinearColor::White);
+		}
+	}
+
+	Super::OnActionProgress(HeldPercent);
+}
+
+void ULyraActionWidget::OnActionComplete()
+{
+	if (bOverwriteHoldTintColor)
+	{
+		Icon.TintColor = FSlateColor(FLinearColor::White);
+	}
+	Super::OnActionComplete();
+}

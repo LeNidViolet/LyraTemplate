@@ -37,18 +37,18 @@ TScriptInterface<IPickupable> UPickupableStatics::GetFirstPickupableFromActor(AA
 
 void UPickupableStatics::AddPickupToInventory(ULyraInventoryManagerComponent* InventoryComponent, TScriptInterface<IPickupable> Pickup)
 {
-	if (InventoryComponent && Pickup)
-	{
-		const FInventoryPickup& PickupInventory = Pickup->GetPickupInventory();
-
-		for (const FPickupDefinition& Template : PickupInventory.Definitions)
-		{
-			InventoryComponent->AddItemDefinition(Template.ItemDef, Template.StackCount);
-		}
-
-		for (const FPickupInstance& Instance : PickupInventory.Instances)
-		{
-			InventoryComponent->AddItemInstance(Instance.Item);
-		}
-	}
+	// if (InventoryComponent && Pickup)
+	// {
+	// 	const FInventoryPickup& PickupInventory = Pickup->GetPickupInventory();
+	//
+	// 	for (const FPickupDefinition& Template : PickupInventory.Definitions)
+	// 	{
+	// 		InventoryComponent->AddItemDefinition(Template.ItemDef, Template.StackCount);
+	// 	}
+	//
+	// 	for (const FPickupInstance& Instance : PickupInventory.Instances)
+	// 	{
+	// 		InventoryComponent->AddItemInstance(Instance.Item);
+	// 	}
+	// }
 }

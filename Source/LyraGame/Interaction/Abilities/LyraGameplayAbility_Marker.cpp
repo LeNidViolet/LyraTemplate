@@ -159,7 +159,7 @@ void ULyraGameplayAbility_Marker::ActivateAbilityWithTargetData_Implementation(
 	else
 	{
 		// 添加标记
-		if (TargetData->TargetActor.IsValid())
+		if (TargetData->TargetActor)
 		{
 			ALyraWorldMarker::SpawnLyraWorldMarkerActor(
 				Controller,

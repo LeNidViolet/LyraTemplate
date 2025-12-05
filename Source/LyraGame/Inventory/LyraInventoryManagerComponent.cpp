@@ -25,18 +25,18 @@ struct FReplicationFlags;
 FString FLyraInventoryItem::GetDebugString() const
 {
 	TSubclassOf<ULyraInventoryItemDefinition> ItemDef;
-	if (Instance != nullptr)
+	if (ItemInstance != nullptr)
 	{
-		ItemDef = Instance->GetItemDef();
+		ItemDef = ItemInstance->GetItemDef();
 	}
 
-	return FString::Printf(TEXT("%s (%d x %s)"), *GetNameSafe(Instance), StackCount, *GetNameSafe(ItemDef));
+	return FString::Printf(TEXT("%s (%d x %s)"), *GetNameSafe(ItemInstance), StackCount, *GetNameSafe(ItemDef));
 }
 
 bool FLyraInventoryItem::UpdateItem(ULyraInventoryItemInstance* InInstance, int32 InStackCount)
 {
 	// 更新库存条目(服务端)
-	Instance = InInstance;
+	ItemInstance = InInstance;
 	StackCount = InStackCount;
 
 	// 这里的 LastObservedInstance LastObservedStackCount 属于服务端
@@ -44,13 +44,13 @@ bool FLyraInventoryItem::UpdateItem(ULyraInventoryItemInstance* InInstance, int3
 	// 在这里修改了 Observed 数据再直接调用 Replicated 回调的话会检测不到变化
 
 	bool Result = false;
-	if (Instance != LastObservedInstance || StackCount != LastObservedStackCount)
+	if (ItemInstance != LastObservedInstance || StackCount != LastObservedStackCount)
 	{
 		// 是否有变动
 		Result = true;
 
 		LastObservedStackCount = StackCount;
-		LastObservedInstance = Instance;
+		LastObservedInstance = ItemInstance;
 	}
 	return Result;
 }
@@ -89,7 +89,7 @@ void FLyraInventoryList::PostReplicatedAdd(const TArrayView<int32> AddedIndices,
 			/*NewCount=*/Item.StackCount);
 
 		// 开始添加时, StackCount 会指定为 INDEX_NONE
-		Item.LastObservedInstance = Item.Instance;
+		Item.LastObservedInstance = Item.ItemInstance;
 		Item.LastObservedStackCount = Item.StackCount;
 	}
 }
@@ -100,14 +100,14 @@ void FLyraInventoryList::PostReplicatedChange(const TArrayView<int32> ChangedInd
 	{
 		FLyraInventoryItem& Item = Items[Index];
 
-		if (Item.LastObservedInstance == nullptr && Item.Instance == nullptr)
+		if (Item.LastObservedInstance == nullptr && Item.ItemInstance == nullptr)
 		{
 			continue;
 		}
 
 		// 这里可能是 覆盖新的 清空旧的 交换位置 变更数量
 
-		if (Item.LastObservedInstance == nullptr && Item.Instance != nullptr)
+		if (Item.LastObservedInstance == nullptr && Item.ItemInstance != nullptr)
 		{
 			// 旧实例为空, 新实例不为空, 说明是新增
 			BroadcastChangeMessage(
@@ -118,12 +118,12 @@ void FLyraInventoryList::PostReplicatedChange(const TArrayView<int32> ChangedInd
 
 			UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> PostReplicatedChange: Added %s"), *Item.GetDebugString());
 
-			Item.LastObservedInstance = Item.Instance;
+			Item.LastObservedInstance = Item.ItemInstance;
 			Item.LastObservedStackCount = Item.StackCount;
 			continue;
 		}
 
-		if (Item.LastObservedInstance != nullptr && Item.Instance == nullptr)
+		if (Item.LastObservedInstance != nullptr && Item.ItemInstance == nullptr)
 		{
 			// 旧实例不为空, 新实例为空, 说明是移除
 			BroadcastChangeMessage(
@@ -139,7 +139,7 @@ void FLyraInventoryList::PostReplicatedChange(const TArrayView<int32> ChangedInd
 			continue;
 		}
 
-		if (Item.LastObservedInstance == Item.Instance && Item.LastObservedStackCount != Item.StackCount)
+		if (Item.LastObservedInstance == Item.ItemInstance && Item.LastObservedStackCount != Item.StackCount)
 		{
 			// 实例相同, 但是数量变更
 			BroadcastChangeMessage(
@@ -150,12 +150,12 @@ void FLyraInventoryList::PostReplicatedChange(const TArrayView<int32> ChangedInd
 
 			UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> PostReplicatedChange: Updated %s"), *Item.GetDebugString());
 
-			Item.LastObservedInstance = Item.Instance;
+			Item.LastObservedInstance = Item.ItemInstance;
 			Item.LastObservedStackCount = Item.StackCount;
 			continue;
 		}
 
-		if (Item.LastObservedInstance != Item.Instance)
+		if (Item.LastObservedInstance != Item.ItemInstance)
 		{
 			// 实例变更, 说明是交换位置
 			BroadcastChangeMessage(
@@ -166,7 +166,7 @@ void FLyraInventoryList::PostReplicatedChange(const TArrayView<int32> ChangedInd
 
 			UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> PostReplicatedChange: Swapped %s"), *Item.GetDebugString());
 
-			Item.LastObservedInstance = Item.Instance;
+			Item.LastObservedInstance = Item.ItemInstance;
 			Item.LastObservedStackCount = Item.StackCount;
 			continue;
 		}
@@ -185,19 +185,19 @@ void FLyraInventoryList::BroadcastChangeMessage(
 	Message.SlotIndex = Item.SlotIndex;
 	Message.MessageType = MessageType;
 	Message.InventoryOwner = OwnerComponent;
-	Message.Instance = Item.Instance;
+	Message.Instance = Item.ItemInstance;
 	Message.NewCount = NewCount;
 	Message.Delta = NewCount - OldCount;
 
 	UGameplayMessageSubsystem& MessageSystem = UGameplayMessageSubsystem::Get(OwnerComponent->GetWorld());
-	MessageSystem.BroadcastMessage(LyraGameplayTags::Inventory_Stack_Changed, Message);
+	MessageSystem.BroadcastMessage(LyraGameplayTags::Gameplay_Message_Inventory_StackChanged, Message);
 }
 
 bool FLyraInventoryList::IsItemInstanceInInventory(ULyraInventoryItemInstance* ItemInstance) const
 {
 	for (const FLyraInventoryItem& Item : Items)
 	{
-		if (Item.Instance == ItemInstance)
+		if (Item.ItemInstance == ItemInstance)
 		{
 			return true;
 		}
@@ -205,11 +205,11 @@ bool FLyraInventoryList::IsItemInstanceInInventory(ULyraInventoryItemInstance* I
 	return false;
 }
 
-bool FLyraInventoryList::AllocItem(ULyraInventoryItemInstance* Instance, int32 StackCount)
+bool FLyraInventoryList::AllocItem(ULyraInventoryItemInstance* ItemInstance, int32 StackCount)
 {
-	if (IsItemInstanceInInventory(Instance))
+	if (IsItemInstanceInInventory(ItemInstance))
 	{
-		UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> FLyraInventoryList::AllocItem failed: Instance %s is already in inventory"), *GetNameSafe(Instance));
+		UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> FLyraInventoryList::AllocItem failed: Instance %s is already in inventory"), *GetNameSafe(ItemInstance));
 		return false;
 	}
 
@@ -222,7 +222,7 @@ bool FLyraInventoryList::AllocItem(ULyraInventoryItemInstance* Instance, int32 S
 
 	// 使用空闲位置, 注意必要的初始化
 	FLyraInventoryItem &Item = Items[FreeIndex];
-	bool bOk = Item.UpdateItem(Instance, StackCount);
+	bool bOk = Item.UpdateItem(ItemInstance, StackCount);
 	check(bOk);
 
 	MarkItemDirty(Item);
@@ -237,19 +237,23 @@ bool FLyraInventoryList::AllocItem(ULyraInventoryItemInstance* Instance, int32 S
 }
 
 
-void FLyraInventoryList::EraseItem(ULyraInventoryItemInstance* Instance)
+void FLyraInventoryList::EraseItem(ULyraInventoryItemInstance* ItemInstance)
 {
-	if (!IsItemInstanceInInventory(Instance))
+	if (!IsItemInstanceInInventory(ItemInstance))
 	{
-		UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> FLyraInventoryList::EraseItem failed: Instance %s is not in inventory"), *GetNameSafe(Instance));
+		UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> FLyraInventoryList::EraseItem failed: Instance %s is not in inventory"), *GetNameSafe(ItemInstance));
 		return;
 	}
 
 	for (FLyraInventoryItem& Item : Items)
 	{
-		if (Item.Instance == Instance)
+		if (Item.ItemInstance == ItemInstance)
 		{
 			UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> FLyraInventoryList::EraseItem: %s"), *Item.GetDebugString());
+
+			bool bOk = Item.UpdateItem(nullptr, INDEX_NONE);
+			check(bOk);
+			MarkItemDirty(Item);
 
 			// Broadcast on Server/Standalone
 			BroadcastChangeMessage(
@@ -257,26 +261,22 @@ void FLyraInventoryList::EraseItem(ULyraInventoryItemInstance* Instance)
 				/*MessageType=*/EInventoryStackChangeMessageType::EISCM_Remove,
 				/*OldCount=*/Item.StackCount,
 				/*NewCount=*/0);
-
-			bool bOk = Item.UpdateItem(nullptr, INDEX_NONE);
-			check(bOk);
-			MarkItemDirty(Item);
 			break;
 		}
 	}
 }
 
-bool FLyraInventoryList::StackItem(ULyraInventoryItemInstance* Instance, int32 Delta)
+bool FLyraInventoryList::StackItem(ULyraInventoryItemInstance* ItemInstance, int32 Delta)
 {
-	if (!IsItemInstanceInInventory(Instance))
+	if (!IsItemInstanceInInventory(ItemInstance))
 	{
-		UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> FLyraInventoryList::StackItem failed: Instance %s is not in inventory"), *GetNameSafe(Instance));
+		UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> FLyraInventoryList::StackItem failed: Instance %s is not in inventory"), *GetNameSafe(ItemInstance));
 		return false;
 	}
 
 	for (FLyraInventoryItem& Item : Items)
 	{
-		if (Item.Instance == Instance)
+		if (Item.ItemInstance == ItemInstance)
 		{
 			int32 OldStackCount = Item.StackCount;
 			int32 NewStackCount = OldStackCount + Delta;
@@ -287,22 +287,22 @@ bool FLyraInventoryList::StackItem(ULyraInventoryItemInstance* Instance, int32 D
 			{
 				ensure(NewStackCount == 0);
 
+				// 移除该物品实例 注意调用方应当负责将Instance移除复制队列
+				bool bOk = Item.UpdateItem(nullptr, INDEX_NONE);
+				check(bOk);
+				MarkItemDirty(Item);
+
 				// Broadcast on Server/Standalone
 				BroadcastChangeMessage(
 					Item,
 					/*MessageType=*/EInventoryStackChangeMessageType::EISCM_Remove,
 					/*OldCount=*/Item.StackCount,
 					/*NewCount=*/0);
-
-				// 移除该物品实例 注意调用方应当负责将Instance移除复制队列
-				bool bOk = Item.UpdateItem(nullptr, INDEX_NONE);
-				check(bOk);
-				MarkItemDirty(Item);
 			}
 			else
 			{
 				// 更新堆叠数量 我们这里不检查是否超过最大堆叠数量, 由调用方负责
-				bool bOk = Item.UpdateItem(Instance, NewStackCount);
+				bool bOk = Item.UpdateItem(ItemInstance, NewStackCount);
 				check(bOk);
 				MarkItemDirty(Item);
 
@@ -336,7 +336,7 @@ void FLyraInventoryList::Initialize(int32 Capacity)
 	for (int32 i = 0; i < Capacity; ++i)
 	{
 		Items[i].SlotIndex = i;
-		Items[i].Instance = nullptr;
+		Items[i].ItemInstance = nullptr;
 		Items[i].StackCount = INDEX_NONE;
 		Items[i].LastObservedStackCount = INDEX_NONE;
 		MarkItemDirty(Items[i]); // 确保同步
@@ -361,9 +361,9 @@ TArray<ULyraInventoryItemInstance*> FLyraInventoryList::GetAllItemInstances() co
 	Results.Reserve(Items.Num());
 	for (const FLyraInventoryItem& Item : Items)
 	{
-		if (IsValid(Item.Instance.Get())) //@TODO: Would prefer to not deal with this
+		if (IsValid(Item.ItemInstance.Get())) //@TODO: Would prefer to not deal with this
 		{
-			Results.Add(Item.Instance.Get());
+			Results.Add(Item.ItemInstance.Get());
 		}
 	}
 	return Results;
@@ -373,7 +373,7 @@ int32 FLyraInventoryList::FindFreeSlotIndex() const
 {
 	for (const FLyraInventoryItem& Item : Items)
 	{
-		if (!IsValid(Item.Instance.Get())) //@TODO: Would prefer to not deal with this
+		if (!IsValid(Item.ItemInstance.Get())) //@TODO: Would prefer to not deal with this
 		{
 			return Item.SlotIndex;
 		}
@@ -386,7 +386,7 @@ int32 FLyraInventoryList::GetFreeSlotsCount() const
 	int32 Count = 0;
 	for (const FLyraInventoryItem& Item : Items)
 	{
-		if (Item.Instance == nullptr)
+		if (Item.ItemInstance == nullptr)
 		{
 			++Count;
 		}
@@ -394,12 +394,12 @@ int32 FLyraInventoryList::GetFreeSlotsCount() const
 	return Count;
 }
 
-int32 FLyraInventoryList::FindSlotIndexByInstance(ULyraInventoryItemInstance* Instance) const
+int32 FLyraInventoryList::FindSlotIndexByInstance(ULyraInventoryItemInstance* ItemInstance) const
 {
 	for (const FLyraInventoryItem& Item : Items)
 	{
-		ULyraInventoryItemInstance* ItemInstance = Item.Instance.Get();
-		if (IsValid(ItemInstance) && Item.Instance == ItemInstance)
+		ULyraInventoryItemInstance* OtherInstance = Item.ItemInstance.Get();
+		if (IsValid(OtherInstance) && Item.ItemInstance == ItemInstance)
 		{
 			return Item.SlotIndex;
 		}
@@ -411,7 +411,7 @@ int32 FLyraInventoryList::FindSlotIndexByDefinition(TSubclassOf<ULyraInventoryIt
 {
 	for (const FLyraInventoryItem& Item : Items)
 	{
-		ULyraInventoryItemInstance* ItemInstance = Item.Instance.Get();
+		ULyraInventoryItemInstance* ItemInstance = Item.ItemInstance.Get();
 		if (IsValid(ItemInstance) && ItemInstance->GetItemDef() == ItemDefinition)
 		{
 			return Item.SlotIndex;
@@ -424,7 +424,7 @@ ULyraInventoryItemInstance* FLyraInventoryList::FindItemInstanceByDefinition(TSu
 {
 	for (const FLyraInventoryItem& Item : Items)
 	{
-		ULyraInventoryItemInstance* ItemInstance = Item.Instance.Get();
+		ULyraInventoryItemInstance* ItemInstance = Item.ItemInstance.Get();
 		if (IsValid(ItemInstance) && ItemInstance->GetItemDef() == ItemDefinition)
 		{
 			return ItemInstance;
@@ -439,7 +439,7 @@ int32 FLyraInventoryList::GetSlotsCountByDefinition(TSubclassOf<ULyraInventoryIt
 	int32 TotalCount = 0;
 	for (const FLyraInventoryItem& Item : Items)
 	{
-		ULyraInventoryItemInstance* Instance = Item.Instance.Get();
+		ULyraInventoryItemInstance* Instance = Item.ItemInstance.Get();
 
 		if (IsValid(Instance))
 		{
@@ -622,7 +622,7 @@ EInventoryCanAddItemResult ULyraInventoryManagerComponent::CanAddItemToExisting(
 	// 如果有一个 Slot 没有达到限制, 就算不能容纳所有的 StackCount 也允许添加
 	for (const FLyraInventoryItem& Item : InventoryList.Items)
 	{
-		ULyraInventoryItemInstance* Instance = Item.Instance.Get();
+		ULyraInventoryItemInstance* Instance = Item.ItemInstance.Get();
 		if (IsValid(Instance))
 		{
 			if (Instance->GetItemDef() == ItemDefinition)
@@ -681,7 +681,7 @@ bool ULyraInventoryManagerComponent::IsItemInstanceInInventory(ULyraInventoryIte
 
 	for (const FLyraInventoryItem& Item : InventoryList.Items)
 	{
-		ULyraInventoryItemInstance* Instance = Item.Instance.Get();
+		ULyraInventoryItemInstance* Instance = Item.ItemInstance.Get();
 
 		if (IsValid(Instance))
 		{
@@ -758,6 +758,7 @@ int32 ULyraInventoryManagerComponent::AddItem(ALyraWorldCollectable* Collectable
 			{
 				int32 NumAdded = AddItemInstance(
 					PickupInstance.Item.Get(),
+					Collectable,
 					PickupInstance.StackCount,
 					StackBehavior);
 				Result += NumAdded;
@@ -772,9 +773,6 @@ int32 ULyraInventoryManagerComponent::AddItem(ALyraWorldCollectable* Collectable
 				else
 				{
 					ensure(NumRemaining == 0);
-					// 对于Instance来说, 还需要将其从复制队列中移除 所有权已经 在 AddItemInstance 中转移了
-					Collectable->RemoveReplicatedSubObject(PickupInstance.Item.Get());
-					PickupInstance.Item.Get()->MarkAsGarbage();
 				}
 			}
 			else
@@ -800,11 +798,12 @@ int32 ULyraInventoryManagerComponent::AddItemDefinition(
 	if (!ItemDefinition || StackCount <= 0){ return 0; }
 	if (CanAddItemForDefinition(ItemDefinition, StackCount, StackBehavior) != EInventoryCanAddItemResult::EICAR_Success){ return 0; }
 
-	return AddItemInstanceInternal(false, ItemDefinition, nullptr, StackCount, StackBehavior);
+	return AddItemInstanceInternal(false, nullptr, ItemDefinition, nullptr, StackCount, StackBehavior);
 }
 
 int32 ULyraInventoryManagerComponent::AddItemInstance(
 	ULyraInventoryItemInstance* ItemInstance,
+	AActor* OwnerActor,
 	int32 StackCount,
 	EInventoryStackBehavior StackBehavior)
 {
@@ -815,13 +814,14 @@ int32 ULyraInventoryManagerComponent::AddItemInstance(
 	TSubclassOf<ULyraInventoryItemDefinition> ItemDef = ItemInstance->GetItemDef();
 	if (!ItemDef){ return 0; }
 
-	return AddItemInstanceInternal(true, ItemDef, ItemInstance, StackCount, StackBehavior);
+	return AddItemInstanceInternal(true, OwnerActor, ItemDef, ItemInstance, StackCount, StackBehavior);
 }
 
 
 
 int32 ULyraInventoryManagerComponent::AddItemInstanceInternal(
 	bool FromInstance,
+	AActor* OwnerActor,
 	TSubclassOf<ULyraInventoryItemDefinition> ItemDefinition,
 	ULyraInventoryItemInstance* ItemInstance,
 	int32 StackCount,
@@ -841,7 +841,7 @@ int32 ULyraInventoryManagerComponent::AddItemInstanceInternal(
 		{
 			for (FLyraInventoryItem& Item : InventoryList.Items)
 			{
-				ULyraInventoryItemInstance* Instance = Item.Instance;
+				ULyraInventoryItemInstance* Instance = Item.ItemInstance.Get();
 				if (IsValid(Instance))
 				{
 					if (Instance->GetItemDef() == ItemDefinition)
@@ -859,6 +859,7 @@ int32 ULyraInventoryManagerComponent::AddItemInstanceInternal(
 
 							if (StackCount <= 0)
 							{
+								// 全部堆叠完成
 								ensure(StackCount == 0);
 								return NumAdded;
 							}
@@ -889,21 +890,26 @@ int32 ULyraInventoryManagerComponent::AddItemInstanceInternal(
 			break;
 		}
 
-		// 如果一个 slot 就可以放下所有的堆叠数量, 则直接使用原有的实例
+		// 一个 slot 就可以放下所有的堆叠数量
 		if (FromInstance && ToAdd == StackCount)
 		{
-			// 过渡Owner
-			// Owner == Controller
-			ItemInstance->Rename(nullptr, GetOwner());
+			// 哪些内容会被复制?
+			// UPROPERTY 标注的所有属性
+			// UOBject* 执行浅拷贝, 与原始对象指向同一个地址
+			// Instanced 属性 (递归复制)
+			// 普通的 C++ 成员变量不会被复制 它们会保持默认构造的值
+			// 容器 TArray, TMap 容器内的元素也会按照上述规则进行复制
 
-			// 注册复制, 否则客户端可能看不到这个物品的更新 (注意需要在原来的Actor/ActorComponent注销复制操作)
-			// 一般来说PickupActor会销毁掉, 复制也就自动停止了
+			// TODO FGameplayTagStackContainer 中有TMap, 可能需要手动重建它
+			ULyraInventoryItemInstance* NewInstance = DuplicateObject<ULyraInventoryItemInstance>(ItemInstance, this);
+
+			// 注册复制, 否则客户端可能看不到这个物品的更新
 			if (IsUsingRegisteredSubObjectList() && IsReadyForReplication())
 			{
-				AddReplicatedSubObject(ItemInstance);
+				AddReplicatedSubObject(NewInstance);
 			}
 
-			bool bOk = InventoryList.AllocItem(ItemInstance, ToAdd);
+			bool bOk = InventoryList.AllocItem(NewInstance, ToAdd);
 			check(bOk);
 
 			NumAdded += ToAdd;
@@ -918,7 +924,7 @@ int32 ULyraInventoryManagerComponent::AddItemInstanceInternal(
 		}
 
 		// Owner == Controller
-		ULyraInventoryItemInstance* NewInstance = NewObject<ULyraInventoryItemInstance>(GetOwner());
+		ULyraInventoryItemInstance* NewInstance = NewObject<ULyraInventoryItemInstance>(this);
 		NewInstance->SetItemDef(ItemDefinition);
 
 		// 初始化 Fragment 使用 ItemDef 创建新实例时需要调用
@@ -935,9 +941,7 @@ int32 ULyraInventoryManagerComponent::AddItemInstanceInternal(
 
 		if (IsUsingRegisteredSubObjectList() && IsReadyForReplication())
 		{
-			// 注意这里使用的是ActorComponent来进行复制注册, 而UObject的Owner是 Inventory Manger 的Owner
-			// TODO 这里是否也要考虑使用 Owner 来注册复制?
-			UE_LOG(LogLyraInventory, Verbose, TEXT("LyraInventory ====> ULyraInventoryManagerComponent::AddItem: Adding replicated subobject %s"), *GetNameSafe(NewInstance));
+			UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> ULyraInventoryManagerComponent::AddItem: Adding replicated subobject %s"), *GetNameSafe(NewInstance));
 			AddReplicatedSubObject(NewInstance);
 		}
 
@@ -950,8 +954,72 @@ int32 ULyraInventoryManagerComponent::AddItemInstanceInternal(
 }
 
 
+bool ULyraInventoryManagerComponent::DropItem(
+	ULyraInventoryItemInstance* ItemInstance,
+	int32 StackCount,
+	ULyraInventoryItemInstance*& OutDroppedInstance,
+	int32& OutDroppedStackCount)
+{
+	if (!ItemInstance || StackCount <= 0) return false;
+	AActor* OwningActor = GetOwner();
+	if (!OwningActor || !OwningActor->HasAuthority()) {return false;}
 
-void ULyraInventoryManagerComponent::RemoveItemInstance(ULyraInventoryItemInstance* ItemInstance)
+	int32 SlotIndex = InventoryList.FindSlotIndexByInstance(ItemInstance);
+	if (!InventoryList.IsValidSlotIndex(SlotIndex))
+	{
+		UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> ULyraInventoryManagerComponent::DropItem failed: ItemInstance %s is not in inventory"), *GetNameSafe(ItemInstance));
+		return false;
+	}
+
+	FLyraInventoryItem &Item = InventoryList.Items[SlotIndex];
+	if (StackCount > Item.StackCount)
+	{
+		UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> ULyraInventoryManagerComponent::DropItem failed: ItemInstance %s has only %d items, requested %d"), *GetNameSafe(ItemInstance), Item.StackCount, StackCount);
+		return false;
+	}
+
+	// 判断一下是全部丢弃 还是部分丢弃
+	if (StackCount < Item.StackCount)
+	{
+		// 部分丢弃, 减少库存数量, 使用 ItemDefinition 创建新的 WorldCollectable
+		InventoryList.StackItem(ItemInstance, -StackCount);
+		UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> ULyraInventoryManagerComponent::DropItem: Dropped %d from ItemInstance %s, Remaining StackCount %d"), StackCount, *GetNameSafe(ItemInstance), Item.StackCount);
+
+		// 创建新的 ItemInstance 作为丢弃物
+		ULyraInventoryItemInstance* NewInstance = NewObject<ULyraInventoryItemInstance>(GetTransientPackage());
+		NewInstance->SetItemDef(ItemInstance->GetItemDef());
+
+		// 初始化 Fragments
+		for (ULyraInventoryItemFragment* Fragment : GetDefault<ULyraInventoryItemDefinition>(ItemInstance->GetItemDef())->Fragments)
+		{
+			if (Fragment != nullptr)
+			{
+				Fragment->OnInstanceCreated(NewInstance);
+			}
+		}
+
+		OutDroppedInstance = NewInstance;
+		OutDroppedStackCount = StackCount;
+	}
+	else
+	{
+		// 全部丢弃, 直接从库存中移除
+		UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> ULyraInventoryManagerComponent::DropItem: Dropped all %d from ItemInstance %s"), Item.StackCount, *GetNameSafe(ItemInstance));
+
+		// TODO FGameplayTagStackContainer 中有TMap, 可能需要手动重建它
+		ULyraInventoryItemInstance* NewInstance = DuplicateObject<ULyraInventoryItemInstance>(ItemInstance, GetTransientPackage());
+
+		RemoveItemInstance(ItemInstance);
+
+		OutDroppedInstance = NewInstance;
+		OutDroppedStackCount = StackCount;
+	}
+
+	return true;
+}
+
+
+void ULyraInventoryManagerComponent::RemoveItemInstance(ULyraInventoryItemInstance* ItemInstance, bool MarkAsGarbage)
 {
 	if (!ItemInstance) {return;}
 	AActor* OwningActor = GetOwner();
@@ -961,18 +1029,21 @@ void ULyraInventoryManagerComponent::RemoveItemInstance(ULyraInventoryItemInstan
 	InventoryList.EraseItem(ItemInstance);
 
 	// 从复制系统中移除, 并且标记为垃圾
-	ClearItemInstanceInternal(ItemInstance);
+	ClearItemInstanceInternal(ItemInstance, MarkAsGarbage);
 }
 
-void ULyraInventoryManagerComponent::ClearItemInstanceInternal(ULyraInventoryItemInstance* ItemInstance)
+void ULyraInventoryManagerComponent::ClearItemInstanceInternal(ULyraInventoryItemInstance* ItemInstance, bool MarkAsGarbage)
 {
 	if (IsUsingRegisteredSubObjectList())
 	{
-		UE_LOG(LogLyraInventory, Verbose, TEXT("LyraInventory ====> ULyraInventoryManagerComponent::ClearItemInstanceInternal: Removing replicated subobject %s"), *GetNameSafe(ItemInstance));
+		UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> ULyraInventoryManagerComponent::ClearItemInstanceInternal: Removing replicated subobject %s"), *GetNameSafe(ItemInstance));
 		RemoveReplicatedSubObject(ItemInstance);
 	}
 
-	ItemInstance->MarkAsGarbage();
+	if (MarkAsGarbage)
+	{
+		ItemInstance->MarkAsGarbage();
+	}
 }
 
 
@@ -1000,7 +1071,7 @@ int32 ULyraInventoryManagerComponent::ConsumeItemsByDefinition(TSubclassOf<ULyra
 		if (InventoryList.IsValidSlotIndex(SlotIndex))
 		{
 			FLyraInventoryItem& Item = InventoryList.Items[SlotIndex];
-			ULyraInventoryItemInstance* ItemInstance = Item.Instance.Get();
+			ULyraInventoryItemInstance* ItemInstance = Item.ItemInstance.Get();
 
 			// Item Instance 可能堆叠多个
 			int32 StackCount = Item.StackCount;
@@ -1100,7 +1171,7 @@ void ULyraInventoryManagerComponent::ReadyForReplication()
 	{
 		for (const FLyraInventoryItem& Item : InventoryList.Items)
 		{
-			ULyraInventoryItemInstance* Instance = Item.Instance.Get();
+			ULyraInventoryItemInstance* Instance = Item.ItemInstance.Get();
 
 			if (IsValid(Instance))
 			{
@@ -1115,7 +1186,7 @@ ULyraInventoryItemInstance* ULyraInventoryManagerComponent::GetItemInstance(int3
 	ULyraInventoryItemInstance* ItemInstance = nullptr;
 	if (InventoryList.IsValidSlotIndex(SlotIndex))
 	{
-		ItemInstance = InventoryList.Items[SlotIndex].Instance.Get();
+		ItemInstance = InventoryList.Items[SlotIndex].ItemInstance.Get();
 	}
 	return ItemInstance;
 }
@@ -1171,3 +1242,34 @@ int32 ULyraInventoryManagerComponent::GetItemStackCount(int32 SlotIndex) const
 // 	virtual bool PassesFilter(ULyraInventoryItemInstance* Instance) const {
 // return true; }
 // };
+
+
+
+void ULyraInventoryManagerComponent::InventoryDebugOut() const
+{
+	UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ============> Inventory Debug Output Start"));
+
+	// UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> Item Count: %d"), InventoryList.Items.Num());
+	for (const FLyraInventoryItem& Item : InventoryList.Items)
+	{
+		ULyraInventoryItemInstance* ItemInstance = Item.ItemInstance.Get();
+		if (IsValid(ItemInstance))
+		{
+			TSubclassOf<ULyraInventoryItemDefinition> ItemDef = ItemInstance->GetItemDef();
+			FString ItemDefName = ItemDef ? ItemDef->GetName() : TEXT("InvalidItemDef");
+
+			UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ====> SlotIndex: %d, Item: %s, StackCount: %d, Owner: %s"),
+				Item.SlotIndex,
+				*ItemDefName,
+				Item.StackCount,
+				*GetNameSafe(ItemInstance->GetOuter()));
+		}
+	}
+
+	UE_LOG(LogLyraInventory, Warning, TEXT("LyraInventory ============> Inventory Debug Output End"));
+}
+
+void ULyraInventoryManagerComponent::ServerInventoryDebugOut_Implementation() const
+{
+	InventoryDebugOut();
+}

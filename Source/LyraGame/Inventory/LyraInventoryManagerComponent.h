@@ -42,7 +42,7 @@ private:
 
 	// 物品实例
 	UPROPERTY()
-	TObjectPtr<ULyraInventoryItemInstance> Instance = nullptr;
+	TObjectPtr<ULyraInventoryItemInstance> ItemInstance = nullptr;
 	// 物品堆叠数量
 	UPROPERTY()
 	int32 StackCount = INDEX_NONE;
@@ -81,7 +81,7 @@ struct FLyraInventoryList : public FFastArraySerializer
 	int32 GetFreeSlotsCount() const;
 
 	// 通过物品实例查找物品索引
-	int32 FindSlotIndexByInstance(ULyraInventoryItemInstance* Instance) const;
+	int32 FindSlotIndexByInstance(ULyraInventoryItemInstance* ItemInstance) const;
 	// 通过物品定义查找物品索引
 	int32 FindSlotIndexByDefinition(TSubclassOf<ULyraInventoryItemDefinition> ItemDefinition) const;
 	// 通过物品定义查找首个物品实例
@@ -105,11 +105,11 @@ struct FLyraInventoryList : public FFastArraySerializer
 	// FLyraInventoryList 目前只通过 ULyraInventoryItemInstance 进行物品操作
 	// 如果需要通过 Definition 进行操作, 在 ULyraInventoryManagerComponent
 	// 中生成对应的实例再调用下面的接口 分配一个物品实例到库存空闲位置
-	bool AllocItem(ULyraInventoryItemInstance* Instance, int32 StackCount);
+	bool AllocItem(ULyraInventoryItemInstance* ItemInstance, int32 StackCount);
 	// 从库存中移除指定物品实例
-	void EraseItem(ULyraInventoryItemInstance* Instance);
+	void EraseItem(ULyraInventoryItemInstance* ItemInstance);
 	// 变更物品堆叠数量, 如果 NewCount <= 0 则移除该物品实例, 增量为 Delta
-	bool StackItem(ULyraInventoryItemInstance* Instance, int32 Delta);
+	bool StackItem(ULyraInventoryItemInstance* ItemInstance, int32 Delta);
 
 private:
 	void BroadcastChangeMessage(FLyraInventoryItem& Item,
@@ -203,9 +203,9 @@ public:
 
 	// 检查是否可以添加拾取物到库存中(数组中可能包含多个物品定义和实例)
 	UFUNCTION(BlueprintCallable, Category = Inventory)
-	UE_API EInventoryCanAddItemResult
-	CanAddItem(ALyraWorldCollectable* Collectable,
-	           EInventoryStackBehavior StackBehavior = EInventoryStackBehavior::ESB_StackOrCreateNew) const;
+	UE_API EInventoryCanAddItemResult CanAddItem(
+		ALyraWorldCollectable* Collectable,
+		EInventoryStackBehavior StackBehavior = EInventoryStackBehavior::ESB_StackOrCreateNew) const;
 
 	// 检查是否可以添加拾取物到库存中(物品定义)
 	UFUNCTION(BlueprintCallable, Category = Inventory)
@@ -231,8 +231,7 @@ public:
 
 	// 向库存中添加拾取物(物品定义)
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = Inventory)
-	UE_API int32
-	AddItemDefinition(
+	UE_API int32 AddItemDefinition(
 		TSubclassOf<ULyraInventoryItemDefinition> ItemDefinition,
 	    int32 StackCount = 1,
 	    EInventoryStackBehavior StackBehavior = EInventoryStackBehavior::ESB_StackOrCreateNew);
@@ -241,11 +240,21 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = Inventory)
 	UE_API int32 AddItemInstance(
 		ULyraInventoryItemInstance* ItemInstance,
+		AActor* OwnerActor,
 		int32 StackCount = 1,
 		EInventoryStackBehavior StackBehavior = EInventoryStackBehavior::ESB_StackOrCreateNew);
 
+	// 从库存中丢弃物品 因为库存中都是 ItemInstance, 所以必须通过 ItemInstance 来丢弃
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = Inventory)
-	UE_API void RemoveItemInstance(ULyraInventoryItemInstance* ItemInstance);
+	UE_API bool DropItem(
+		ULyraInventoryItemInstance* ItemInstance,
+		int32 StackCount,
+		ULyraInventoryItemInstance*& OutDroppedInstance,
+		int32& OutDroppedStackCount);
+
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = Inventory)
+	UE_API void RemoveItemInstance(ULyraInventoryItemInstance* ItemInstance, bool MarkAsGarbage = true);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = Inventory)
 	UE_API TArray<ULyraInventoryItemInstance*> GetAllItemInstances() const;
@@ -254,9 +263,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = Inventory)
 	UE_API int32 GetInventoryCapacity() const;
 
+	// 消费库存
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = Inventory)
 	UE_API int32 ConsumeItemsByDefinition(TSubclassOf<ULyraInventoryItemDefinition> ItemDefinition, int32 NumToConsume);
 
+	// 消费库存
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = Inventory)
 	UE_API int32 ConsumeItemsByInstance(ULyraInventoryItemInstance* ItemInstance, int32 NumToConsume);
 
@@ -284,18 +295,27 @@ private:
 	// 添加物品实例, 返回实际添加的数量
 	int32 AddItemInstanceInternal(
 		bool FromInstance,
+		AActor* OwnerActor,
 		TSubclassOf<ULyraInventoryItemDefinition> ItemDefinition,
 		ULyraInventoryItemInstance* ItemInstance, int32 StackCount,
 		EInventoryStackBehavior StackBehavior);
 
 	// 最终清理 ItemInstance
-	void ClearItemInstanceInternal(ULyraInventoryItemInstance* ItemInstance);
+	void ClearItemInstanceInternal(ULyraInventoryItemInstance* ItemInstance, bool MarkAsGarbage = true);
 
 	UPROPERTY(Replicated)
 	FLyraInventoryList InventoryList;
 
 	// 库存容量 具体数值从GameData中获取
 	int32 InventoryCapacity = 0;
+
+
+public:
+	// 打印背包数据
+	void InventoryDebugOut() const;
+
+	UFUNCTION(Server, Reliable)
+	void ServerInventoryDebugOut() const;
 };
 
 #undef UE_API

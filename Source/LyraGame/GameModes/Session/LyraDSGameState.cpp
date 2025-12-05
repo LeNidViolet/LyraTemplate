@@ -38,7 +38,7 @@ void ALyraDSGameState::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void ALyraDSGameState::Broadcast_SessionParticipantEvent(const FOnSessionParticipantEventParameters& Parameters)
 {
 	FLyraNotificationMessage Message;
-	Message.TargetChannel = LyraGameplayTags::ToastMessage_Session_MemberEvent;
+	Message.TargetChannel = LyraGameplayTags::Gameplay_Message_Session_MemberEvent;
 	Message.PayloadData.InitializeAs<FOnSessionParticipantEventParameters>(Parameters);
 
 	Multicast_MessageToClients(Message);

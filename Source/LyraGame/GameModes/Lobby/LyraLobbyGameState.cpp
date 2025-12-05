@@ -29,7 +29,7 @@ void ALyraLobbyGameState::Multicast_BroadcastMessage_Implementation(const FStrin
 		if (MessageSubsystem)
 		{
 			MessageSubsystem->BroadcastMessage(
-				LyraGameplayTags::ToastMessage_Lobby_MemberEvent,
+				LyraGameplayTags::Gameplay_Message_Lobby_MemberEvent,
 				message
 				);
 		}
@@ -58,7 +58,7 @@ void ALyraLobbyGameState::Multicast_BroadcastCountdown_Implementation(int32 Coun
 		if (MessageSubsystem)
 		{
 			MessageSubsystem->BroadcastMessage(
-			LyraGameplayTags::ToastMessage_Lobby_Countdown,
+			LyraGameplayTags::Gameplay_Message_Lobby_Countdown,
 			message
 			);
 		}
