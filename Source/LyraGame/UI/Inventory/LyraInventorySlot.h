@@ -6,6 +6,7 @@
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "UI/Foundation/LyraButtonBase.h"
 #include "LyraInventoryDragVisualWidget.h"
+#include "Inventory/LyraInventoryFunctionLibrary.h"
 #include "LyraInventorySlot.generated.h"
 
 #define UE_API LYRAGAME_API
@@ -15,6 +16,18 @@ class ULyraInventoryDragVisualWidget;
 class ULyraInventoryItemInstance;
 class ULyraInventoryManagerComponent;
 struct FOnInventoryStackChangeParameters;
+
+
+UENUM(BlueprintType)
+enum class EInventorySlotVisualState : uint8
+{
+	EISVS_Default,			// 默认状态
+	EISVS_Focused,			// 非选择焦点状态
+	EISVS_SelectFocused,	// 选择焦点状态
+	EISVS_AbleToStack,		// 可堆叠状态
+	EISVS_AbleToSwap,		// 可交换状态
+};
+
 
 /**
  *
@@ -31,6 +44,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Inventory")
 	UE_API int32 GetSlotIndex() const { return SlotIndex; }
+
+	UFUNCTION(BlueprintCallable, Category="Inventory")
+	UE_API void SetVisualState(EInventorySlotVisualState NewState);
 
 protected:
 	// ~ UCommonUserWidget
@@ -57,6 +73,9 @@ protected:
 	UFUNCTION(BlueprintPure, Category="Inventory")
 	UE_API int32 GetInventoryItemStackCount() const;
 
+	UFUNCTION(BlueprintPure, Category="Inventory")
+	UE_API EInventorySlotVisualState GetCurrentVisualState() const { return CurrentVisualState; }
+
 	// 更新slot ui, 在蓝图实现
 	UFUNCTION(BlueprintImplementableEvent, Category="Inventory")
 	void K2_UpdateSlot();
@@ -77,7 +96,10 @@ private:
 	UPROPERTY()
 	TObjectPtr<ULyraInventoryManagerComponent> InventoryManager;
 
-	EDragActionState LastDragActionState = EDragActionState::EDAS_None;
+	EInventorySlotVisualState CurrentVisualState = EInventorySlotVisualState::EISVS_Default;
+
+	// 最后测定的本slot可进行的拖拽操作类型
+	EInventorySlotOperationType LastDragActionState = EInventorySlotOperationType::EISO_None;
 
 	bool HandleDropSwapOperation(ULyraInventoryDragDropOperation* DragOperation);
 	bool HandleDropStackOperation(ULyraInventoryDragDropOperation* DragOperation);

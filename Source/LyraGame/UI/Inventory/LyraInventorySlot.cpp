@@ -20,6 +20,15 @@ ULyraInventorySlot::ULyraInventorySlot(const FObjectInitializer& ObjectInitializ
 {
 }
 
+void ULyraInventorySlot::SetVisualState(EInventorySlotVisualState NewState)
+{
+	if (NewState != CurrentVisualState)
+	{
+		CurrentVisualState = NewState;
+		K2_UpdateSlot();
+	}
+}
+
 void ULyraInventorySlot::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
@@ -136,7 +145,7 @@ void ULyraInventorySlot::NativeOnDragEnter(const FGeometry& InGeometry, const FD
 {
 	// 拖拽操作进入当前slot
 
-	LastDragActionState = EDragActionState::EDAS_None;
+	LastDragActionState = EInventorySlotOperationType::EISO_None;
 
 	Super::NativeOnDragEnter(InGeometry, InDragDropEvent, InOperation);
 	if (!InventoryManager) return ;
@@ -152,56 +161,18 @@ void ULyraInventorySlot::NativeOnDragEnter(const FGeometry& InGeometry, const FD
 
 	if (!DragOperation->ItemInstance) return ;
 
-	// 这里的逻辑是: 检测正在拖拽的物品类型与当前slot的物品类型是否相同
-	// 如果相同, 且可以堆叠, 则显示堆叠提示; 否则显示交换提示
-	EDragActionState DragActionState = EDragActionState::EDAS_None;
-	ULyraInventoryItemInstance* CurrentSlotItemInstance = InventoryManager->GetItemInstance(SlotIndex);
-	if (!CurrentSlotItemInstance)
-	{
-		// 当前Slot没有物品, 只能交换
-		DragActionState = EDragActionState::EDAS_Swap;
-	}
-	else
-	{
-		// 如果物品类型不同, 只能交换
-		if (CurrentSlotItemInstance->GetItemDef() != DragOperation->ItemInstance->GetItemDef())
-		{
-			DragActionState = EDragActionState::EDAS_Swap;
-		}
-		else
-		{
-			// 物品类型相同, 检测是否可以堆叠
-			const ULyraInventoryItemDefinition* ItemDef = GetDefault<ULyraInventoryItemDefinition>(DragOperation->ItemInstance->GetItemDef());
-			if (!ItemDef->bAllowStacking)
-			{
-				// 不允许堆叠
-				DragActionState = EDragActionState::EDAS_Swap;
-			}
-			else
-			{
-				// 允许堆叠, 检测当前slot的堆叠数量是否已满
-				int32 CurrentStackCount = InventoryManager->GetItemStackCount(SlotIndex);
-				if (CurrentStackCount >= ItemDef->MaxStackCount)
-				{
-					// 已满, 只能交换
-					DragActionState = EDragActionState::EDAS_Swap;
-				}
-				else
-				{
-					// 可以堆叠
-					DragActionState = EDragActionState::EDAS_Stack;
-				}
-			}
-		}
-	}
+	EInventorySlotOperationType Operation = ULyraInventoryFunctionLibrary::GetInventorySlotOperationType(
+		InventoryManager.Get(),
+		DragOperation->SourceSlotIndex,
+		SlotIndex);
 
-	LastDragActionState = DragActionState;
-	DragVisual->SetDragActionState(this, DragActionState);
+	LastDragActionState = Operation;
+	DragVisual->SetDragOperationType(this, Operation);
 }
 
 void ULyraInventorySlot::NativeOnDragLeave(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
 {
-	LastDragActionState = EDragActionState::EDAS_None;
+	LastDragActionState = EInventorySlotOperationType::EISO_None;
 
 	// 拖拽操作离开当前slot
 	Super::NativeOnDragLeave(InDragDropEvent, InOperation);
@@ -216,24 +187,25 @@ void ULyraInventorySlot::NativeOnDragLeave(const FDragDropEvent& InDragDropEvent
 	ULyraInventoryDragVisualWidget* DragVisual = Cast<ULyraInventoryDragVisualWidget>(DragOperation->DefaultDragVisual);
 	if (!DragVisual) return ;
 
-	DragVisual->SetDragActionState(this, EDragActionState::EDAS_None);
+	DragVisual->SetDragOperationType(this, LastDragActionState);
 }
 
 bool ULyraInventorySlot::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
 {
+	Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
 	// 拖拽操作放下到当前slot
-	if (LastDragActionState == EDragActionState::EDAS_None) return false;
+	if (LastDragActionState == EInventorySlotOperationType::EISO_None) return false;
 
 	ULyraInventoryDragDropOperation* DragOperation = Cast<ULyraInventoryDragDropOperation>(InOperation);
 	if (!DragOperation) return false;
 
 	// 根据最后测定的操作类型来执行对应的逻辑
-	if (LastDragActionState == EDragActionState::EDAS_Stack)
+	if (LastDragActionState == EInventorySlotOperationType::EISO_Stack)
 	{
 		// 堆叠物品
 		return HandleDropStackOperation(DragOperation);
 	}
-	if (LastDragActionState == EDragActionState::EDAS_Swap)
+	if (LastDragActionState == EInventorySlotOperationType::EISO_Swap)
 	{
 		// 交换物品
 		return HandleDropSwapOperation(DragOperation);

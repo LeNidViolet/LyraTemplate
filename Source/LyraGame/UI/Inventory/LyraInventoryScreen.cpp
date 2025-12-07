@@ -17,6 +17,7 @@
 #include "Inventory/LyraInventoryManagerComponent.h"
 #include "System/LyraGameData.h"
 #include "System/LyraSystemStatics.h"
+#include "UI/Foundation/LyraActionWidget.h"
 #include "UI/Misc/LyraUINaviSubsystem.h"
 
 
@@ -35,6 +36,8 @@ void ULyraInventoryScreen::NativeOnInitialized()
 	DropAllHandle = RegisterUIActionBinding(FBindUIActionArgs(DropAllAction, true, FSimpleDelegate::CreateUObject(this, &ThisClass::HandleDropAllAction)));
 	SelectHandle = RegisterUIActionBinding(FBindUIActionArgs(SelectAction, true, FSimpleDelegate::CreateUObject(this, &ThisClass::HandleSelectAction)));
 	BackHandle = RegisterUIActionBinding(FBindUIActionArgs(BackAction, true, FSimpleDelegate::CreateUObject(this, &ThisClass::HandleBackAction)));
+
+	DropActionName = DropHandle.GetDisplayName();
 }
 
 void ULyraInventoryScreen::NativeConstruct()
@@ -88,10 +91,23 @@ void ULyraInventoryScreen::NativeOnDeactivated()
 	// 当 Inventory Screen 停用时, 恢复模拟摇杆导航
 	ULyraUINaviSubsystem::SetAllowAnalogNavigation(true);
 	Super::NativeOnDeactivated();
+
+	// 停止可能存在的拖拽操作
+	if (FSlateApplication::IsInitialized())
+	{
+		FSlateApplication::Get().CancelDragDrop();
+	}
 }
 
 void ULyraInventoryScreen::HandleBackAction()
 {
+	if (bIsInSelectMode)
+	{
+		ensure(bIsUsingGamepad);
+		// 如果是手柄操作且处于选择模式, 则先退出选择模式
+		EnterOrExitSelectMode();
+		return;
+	}
 	// 准备关闭 Inventory Screen
 	DeactivateWidget();
 }
@@ -111,45 +127,85 @@ void ULyraInventoryScreen::HandleDropAllAction()
 void ULyraInventoryScreen::HandleSelectAction()
 {
 	// 选中物品(只在手柄操作时使用)
+	if (!bIsUsingGamepad) return;
+
+	ULyraInventoryItemInstance* ItemInstance = InventoryManagerComponent->GetItemInstance(CurrentFocusedInventorySlotIndex);
+	if (!ItemInstance && !bIsInSelectMode)
+	{
+		// 当前slot没有物品, 且不处于选择模式, 则不进行任何操作
+		return;
+	}
+
+	// 如果选择的是自身, 则退出选择模式, 如果不是, 则进行相应的操作
+	if (CurrentFocusedInventorySlotIndex != CurrentSelectedInventorySlotIndex && CurrentSelectedInventorySlotIndex != INDEX_NONE)
+	{
+		// 需要针对目标slot进行操作
+		EInventorySlotOperationType OperationType = ULyraInventoryFunctionLibrary::GetInventorySlotOperationType(
+			InventoryManagerComponent.Get(),
+			CurrentSelectedInventorySlotIndex,
+			CurrentFocusedInventorySlotIndex);
+		switch (OperationType)
+		{
+		case EInventorySlotOperationType::EISO_Stack:
+			ULyraInventoryFunctionLibrary::StackInventoryItem(
+				GetOwningPlayerPawn(),
+				InventoryManagerComponent->GetItemInstance(CurrentSelectedInventorySlotIndex),
+				CurrentSelectedInventorySlotIndex,
+				CurrentFocusedInventorySlotIndex);
+			break;
+		case EInventorySlotOperationType::EISO_Swap:
+			ULyraInventoryFunctionLibrary::SwapInventoryItem(
+				GetOwningPlayerPawn(),
+				InventoryManagerComponent->GetItemInstance(CurrentSelectedInventorySlotIndex),
+				CurrentSelectedInventorySlotIndex,
+				CurrentFocusedInventorySlotIndex);
+			break;
+		default:
+			// 无法进行操作, 直接退出选择模式
+			break;
+		}
+	}
+
+
+	// 进入/退出选择模式
+	EnterOrExitSelectMode();
 }
 
 
 // Inventory 追踪焦点槽位
 void ULyraInventoryScreen::HandleInventorySlotFocused(ULyraInventorySlot* SlotWidget)
 {
-	K2_OnInventorySlotFocused(SlotWidget);
 	int32 SlotIndex = SlotWidget->GetSlotIndex();
-	if (SlotIndex != FocusedInventorySlotIndex)
+	if (SlotIndex != CurrentFocusedInventorySlotIndex)
 	{
-		int32 OldSlotIndex = FocusedInventorySlotIndex;
-		FocusedInventorySlotIndex = SlotIndex;
-		HandleInventorySlotFocusChanged(SlotIndex, OldSlotIndex);
+		PreviousFocusedInventorySlotIndex = CurrentFocusedInventorySlotIndex;
+		CurrentFocusedInventorySlotIndex = SlotIndex;
+		HandleInventorySlotFocusChanged(CurrentFocusedInventorySlotIndex, PreviousFocusedInventorySlotIndex);
 	}
+
+	UpdateDropActionName();
 }
 
 // Inventory 追踪焦点槽位
 void ULyraInventoryScreen::HandleInventorySlotUnfocused(ULyraInventorySlot* SlotWidget)
 {
-	K2_OnInventorySlotUnfocused(SlotWidget);
-	if (FocusedInventorySlotIndex == SlotWidget->GetSlotIndex())
+	if (CurrentFocusedInventorySlotIndex == SlotWidget->GetSlotIndex())
 	{
-		int32 OldSlotIndex = FocusedInventorySlotIndex;
-		FocusedInventorySlotIndex = INDEX_NONE;
-		HandleInventorySlotFocusChanged(FocusedInventorySlotIndex, OldSlotIndex);
+		PreviousFocusedInventorySlotIndex = CurrentFocusedInventorySlotIndex;
+		CurrentFocusedInventorySlotIndex = INDEX_NONE;
+		HandleInventorySlotFocusChanged(CurrentFocusedInventorySlotIndex, PreviousFocusedInventorySlotIndex);
 	}
 }
 
 // Inventory 追踪焦点槽位
 void ULyraInventoryScreen::HandleInventorySlotHovered(ULyraInventorySlot* SlotWidget)
 {
-	K2_OnInventorySlotHovered(SlotWidget);
 	HandleInventorySlotFocused(SlotWidget);
 }
 
 // Inventory 追踪焦点槽位
 void ULyraInventoryScreen::HandleInventorySlotUnhovered(ULyraInventorySlot* SlotWidget)
 {
-	K2_OnInventorySlotUnhovered(SlotWidget);
 	HandleInventorySlotUnfocused(SlotWidget);
 }
 
@@ -157,7 +213,7 @@ void ULyraInventoryScreen::HandleInventorySlotUnhovered(ULyraInventorySlot* Slot
 void ULyraInventoryScreen::HandleInventorySlotClicked(ULyraInventorySlot* SlotWidget)
 {
 	K2_OnInventorySlotClicked(SlotWidget);
-	SelectedInventorySlotIndex = SlotWidget->GetSlotIndex();
+	CurrentSelectedInventorySlotIndex = SlotWidget->GetSlotIndex();
 }
 
 
@@ -166,39 +222,35 @@ void ULyraInventoryScreen::HandleInventorySlotClicked(ULyraInventorySlot* SlotWi
 // QuickBar 追踪焦点槽位
 void ULyraInventoryScreen::HandleQuickBarSlotFocused(ULyraInventorySlot* SlotWidget)
 {
-	K2_OnQuickBarSlotFocused(SlotWidget);
 	int32 SlotIndex = SlotWidget->GetSlotIndex();
-	if (SlotIndex != FocusedQuickBarSlotIndex)
+	if (SlotIndex != CurrentFocusedQuickBarSlotIndex)
 	{
-		int32 OldSlotIndex = FocusedQuickBarSlotIndex;
-		FocusedQuickBarSlotIndex = SlotIndex;
-		HandleQuickBarSlotFocusChanged(SlotIndex, OldSlotIndex);
+		PreviousFocusedQuickBarSlotIndex = CurrentFocusedQuickBarSlotIndex;
+		CurrentFocusedQuickBarSlotIndex = SlotIndex;
+		HandleQuickBarSlotFocusChanged(PreviousFocusedQuickBarSlotIndex, CurrentFocusedQuickBarSlotIndex);
 	}
 }
 
 // QuickBar 追踪焦点槽位
 void ULyraInventoryScreen::HandleQuickBarSlotUnfocused(ULyraInventorySlot* SlotWidget)
 {
-	K2_OnQuickBarSlotUnfocused(SlotWidget);
-	if (FocusedQuickBarSlotIndex == SlotWidget->GetSlotIndex())
+	if (CurrentFocusedQuickBarSlotIndex == SlotWidget->GetSlotIndex())
 	{
-		int32 OldSlotIndex = FocusedQuickBarSlotIndex;
-		FocusedQuickBarSlotIndex = INDEX_NONE;
-		HandleQuickBarSlotFocusChanged(FocusedQuickBarSlotIndex, OldSlotIndex);
+		PreviousFocusedQuickBarSlotIndex = CurrentFocusedQuickBarSlotIndex;
+		CurrentFocusedQuickBarSlotIndex = INDEX_NONE;
+		HandleQuickBarSlotFocusChanged(CurrentFocusedQuickBarSlotIndex, PreviousFocusedQuickBarSlotIndex);
 	}
 }
 
 // QuickBar 追踪焦点槽位
 void ULyraInventoryScreen::HandleQuickBarSlotHovered(ULyraInventorySlot* SlotWidget)
 {
-	K2_OnQuickBarSlotHovered(SlotWidget);
 	HandleQuickBarSlotFocused(SlotWidget);
 }
 
 // QuickBar 追踪焦点槽位
 void ULyraInventoryScreen::HandleQuickBarSlotUnhovered(ULyraInventorySlot* SlotWidget)
 {
-	K2_OnQuickBarSlotUnfovered(SlotWidget);
 	HandleQuickBarSlotUnfocused(SlotWidget);
 }
 
@@ -206,15 +258,47 @@ void ULyraInventoryScreen::HandleQuickBarSlotUnhovered(ULyraInventorySlot* SlotW
 void ULyraInventoryScreen::HandleQuickBarSlotClicked(ULyraInventorySlot* SlotWidget)
 {
 	K2_OnQuickBarSlotClicked(SlotWidget);
-	SelectedQuickBarSlotIndex = SlotWidget->GetSlotIndex();
+	CurrentSelectedQuickBarSlotIndex = SlotWidget->GetSlotIndex();
 }
 
 
+void ULyraInventoryScreen::UpdateDropActionName()
+{
+	int32 DropCount = 0;
+	int32 StackCount = 0;
+	ULyraInventoryItemInstance* ItemInstance = InventoryManagerComponent->GetItemInstance(CurrentFocusedInventorySlotIndex);
+	if (ItemInstance)
+	{
+		StackCount = InventoryManagerComponent->GetItemStackCount(CurrentFocusedInventorySlotIndex);
+		if (StackCount > 1)
+		{
+			const TObjectPtr<UCurveFloat> &Curve = ULyraGameData::Get().InventoryDropCurve;
+			if (Curve)
+			{
+				DropCount = ULyraSystemStatics::CalculateDropCount(StackCount, Curve.Get());
+			}
+		}
+	}
+
+	// 更新丢弃操作显示名称 (如果数量大于1)
+	if (DropCount > 1 || StackCount > 1)
+	{
+		FFormatNamedArguments Args;
+		Args.Add(TEXT("Count"), DropCount);
+		FText NewDropActionName = FText::Format(NSLOCTEXT("LyraInventory", "DropActionWithCount", "Drop ({Count})"), Args);
+		DropHandle.SetDisplayName(NewDropActionName);
+	}
+	else
+	{
+		DropHandle.SetDisplayName(DropActionName);
+	}
+}
 
 void ULyraInventoryScreen::HandleInputMethodChanged(ECommonInputType NewInputMethod)
 {
 	// 仅在使用手柄时启用选择操作
-	if (NewInputMethod == ECommonInputType::Gamepad)
+	bIsUsingGamepad = (NewInputMethod == ECommonInputType::Gamepad);
+	if (bIsUsingGamepad)
 	{
 		if (!GetActionBindings().Contains(SelectHandle))
 		{
@@ -225,12 +309,15 @@ void ULyraInventoryScreen::HandleInputMethodChanged(ECommonInputType NewInputMet
 	{
 		RemoveActionBinding(SelectHandle);
 	}
+
+	if (bIsInSelectMode)
+		ExitSelectMode();
 }
 
 void ULyraInventoryScreen::DropActionDo(bool DropAll)
 {
-	ULyraInventoryItemInstance* ItemInstance = InventoryManagerComponent->GetItemInstance(FocusedInventorySlotIndex);
-	int32 ItemStackCount = InventoryManagerComponent->GetItemStackCount(FocusedInventorySlotIndex);
+	ULyraInventoryItemInstance* ItemInstance = InventoryManagerComponent->GetItemInstance(CurrentFocusedInventorySlotIndex);
+	int32 ItemStackCount = InventoryManagerComponent->GetItemStackCount(CurrentFocusedInventorySlotIndex);
 	if (!ItemInstance) return;
 	if (ItemStackCount <= 0) return;
 
@@ -342,23 +429,25 @@ void ULyraInventoryScreen::HandleInventoryStackChangeEvent(FGameplayTag Channel,
 	// 2. 移除物品
 	// 3. 更新物品数量
 	// 4. 交换物品位置
+
+	UpdateDropActionName();
 }
 
 
 ULyraInventorySlot* ULyraInventoryScreen::GetCurrentFocusedInventorySlot() const
 {
-	if (InventorySlotWidgets.IsValidIndex(FocusedInventorySlotIndex))
+	if (InventorySlotWidgets.IsValidIndex(CurrentFocusedInventorySlotIndex))
 	{
-		return InventorySlotWidgets[FocusedInventorySlotIndex];
+		return InventorySlotWidgets[CurrentFocusedInventorySlotIndex];
 	}
 	return nullptr;
 }
 
 ULyraInventorySlot* ULyraInventoryScreen::GetCurrentFocusedQuickBarSlot() const
 {
-	if (QuickBarSlotWidgets.IsValidIndex(FocusedQuickBarSlotIndex))
+	if (QuickBarSlotWidgets.IsValidIndex(CurrentFocusedQuickBarSlotIndex))
 	{
-		return QuickBarSlotWidgets[FocusedQuickBarSlotIndex];
+		return QuickBarSlotWidgets[CurrentFocusedQuickBarSlotIndex];
 	}
 	return nullptr;
 }
@@ -366,10 +455,63 @@ ULyraInventorySlot* ULyraInventoryScreen::GetCurrentFocusedQuickBarSlot() const
 void ULyraInventoryScreen::HandleInventorySlotFocusChanged(int32 NewFocusedSlotIndex, int32 OldFocusedSlotIndex)
 {
 	K2_OnInventorySlotFocusChanged(NewFocusedSlotIndex, OldFocusedSlotIndex);
+
+	// 如果没有处于选择模式, 则旧slot去焦, 新slot获焦
+	if (!bIsInSelectMode)
+	{
+		if (InventorySlotWidgets.IsValidIndex(OldFocusedSlotIndex))
+		{
+			InventorySlotWidgets[OldFocusedSlotIndex]->SetVisualState(EInventorySlotVisualState::EISVS_Default);
+		}
+		if (InventorySlotWidgets.IsValidIndex(NewFocusedSlotIndex))
+		{
+			InventorySlotWidgets[NewFocusedSlotIndex]->SetVisualState(EInventorySlotVisualState::EISVS_Focused);
+		}
+	}
+	else
+	{
+		// 处于选择模式, 选中的slot保持焦点状态, 当前slot根据可进行的操作显示不同状态
+		if (CurrentSelectedInventorySlotIndex != OldFocusedSlotIndex)
+		{
+			if (InventorySlotWidgets.IsValidIndex(OldFocusedSlotIndex))
+			{
+				InventorySlotWidgets[OldFocusedSlotIndex]->SetVisualState(EInventorySlotVisualState::EISVS_Default);
+			}
+		}
+
+		if (InventorySlotWidgets.IsValidIndex(NewFocusedSlotIndex))
+		{
+			if (CurrentSelectedInventorySlotIndex != NewFocusedSlotIndex)
+			{
+				// 根据可进行的操作显示不同状态
+				EInventorySlotOperationType OperationType = ULyraInventoryFunctionLibrary::GetInventorySlotOperationType(
+					InventoryManagerComponent.Get(),
+					CurrentSelectedInventorySlotIndex,
+					NewFocusedSlotIndex);
+				switch (OperationType)
+				{
+				case EInventorySlotOperationType::EISO_Stack:
+					InventorySlotWidgets[NewFocusedSlotIndex]->SetVisualState(EInventorySlotVisualState::EISVS_AbleToStack);
+					break;
+				case EInventorySlotOperationType::EISO_Swap:
+					InventorySlotWidgets[NewFocusedSlotIndex]->SetVisualState(EInventorySlotVisualState::EISVS_AbleToSwap);
+					break;
+				default:
+					InventorySlotWidgets[NewFocusedSlotIndex]->SetVisualState(EInventorySlotVisualState::EISVS_Default);
+					break;
+				}
+			}
+			else
+			{
+				InventorySlotWidgets[NewFocusedSlotIndex]->SetVisualState(EInventorySlotVisualState::EISVS_SelectFocused);
+			}
+		}
+	}
 }
 
 void ULyraInventoryScreen::HandleQuickBarSlotFocusChanged(int32 NewFocusedSlotIndex, int32 OldFocusedSlotIndex)
 {
+	// TODO
 	K2_OnQuickBarSlotFocusChanged(NewFocusedSlotIndex, OldFocusedSlotIndex);
 }
 
@@ -475,5 +617,60 @@ void ULyraInventoryScreen::DeinitializeUIWidgets()
 
 	QuickBarSlotsGridPanel->ClearChildren();
 	QuickBarSlotWidgets.Empty();
+}
+
+void ULyraInventoryScreen::EnterOrExitSelectMode()
+{
+	if (bIsInSelectMode)
+	{
+		ExitSelectMode();
+	}
+	else
+	{
+		EnterSelectMode();
+	}
+}
+
+void ULyraInventoryScreen::EnterSelectMode()
+{
+	ensure(bIsInSelectMode == false);
+	bIsInSelectMode = true;
+	CurrentSelectedInventorySlotIndex = CurrentFocusedInventorySlotIndex;
+	HandleInventorySlotFocusChanged(CurrentFocusedInventorySlotIndex, PreviousFocusedInventorySlotIndex);
+
+
+	RemoveActionBinding(DropAllHandle);
+	RemoveActionBinding(DropHandle);
+
+	// TODO QuickBar
+}
+
+void ULyraInventoryScreen::ExitSelectMode()
+{
+	ensure(bIsInSelectMode == true);
+	bIsInSelectMode = false;
+
+	// 退出选择模式后, 选中slot恢复默认状态, 当前slot恢复焦点状态
+	if (InventorySlotWidgets.IsValidIndex(CurrentSelectedInventorySlotIndex))
+	{
+		InventorySlotWidgets[CurrentSelectedInventorySlotIndex]->SetVisualState(
+			CurrentSelectedInventorySlotIndex != CurrentFocusedInventorySlotIndex ?
+			EInventorySlotVisualState::EISVS_Default : EInventorySlotVisualState::EISVS_Focused);
+	}
+
+	CurrentSelectedInventorySlotIndex = INDEX_NONE;
+	HandleInventorySlotFocusChanged(CurrentFocusedInventorySlotIndex, PreviousFocusedInventorySlotIndex);
+
+
+	if (!GetActionBindings().Contains(DropAllHandle))
+	{
+		AddActionBinding(DropAllHandle);
+	}
+	if (!GetActionBindings().Contains(DropHandle))
+	{
+		AddActionBinding(DropHandle);
+	}
+
+	// TODO QuickBar
 }
 

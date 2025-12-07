@@ -22,12 +22,12 @@ void ULyraInventoryDragVisualWidget::SetSlotSize(const FVector2D& InSlotSize)
 	K2_UpdateSlotSize();
 }
 
-void ULyraInventoryDragVisualWidget::SetDragActionState(UUserWidget* TriggerWidget, EDragActionState InState)
+void ULyraInventoryDragVisualWidget::SetDragOperationType(UUserWidget* TriggerWidget, EInventorySlotOperationType OperationType)
 {
 	if (!TriggerWidget) return;
 
 	// 记录最后更新的Widget, 如果当前状态已经由另外的Widget做出了变动, 之前的Widget再来设置None时就忽略它
-	if (InState != EDragActionState::EDAS_None)
+	if (OperationType != EInventorySlotOperationType::EISO_None)
 	{
 		LastWidget = TriggerWidget;
 	}
@@ -39,6 +39,6 @@ void ULyraInventoryDragVisualWidget::SetDragActionState(UUserWidget* TriggerWidg
 		}
 	}
 
-	DragActionState = InState;
+	DragOperationType = OperationType;
 	K2_UpdateActionState();
 }

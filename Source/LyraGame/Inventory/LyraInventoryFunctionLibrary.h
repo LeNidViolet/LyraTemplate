@@ -17,9 +17,19 @@ enum class EInventoryItemRarity : uint8;
 class ULyraInventoryItemDefinition;
 class ULyraInventoryItemFragment;
 
-/**
- *
- */
+
+UENUM(BlueprintType)
+enum class EInventorySlotOperationType : uint8
+{
+	EISO_None,			// 无操作 对自己
+	EISO_Swap,			// 交换
+	EISO_Stack,			// 堆叠
+	EISO_Drop			// 丢弃
+};
+
+
+
+
 UCLASS()
 class ULyraInventoryFunctionLibrary : public UBlueprintFunctionLibrary
 {
@@ -50,6 +60,10 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Inventory")
 	static FString GetInventoryAddItemResultString(EInventoryCanAddItemResult Result);
+
+	// 一个 slot 可以对另一个 slot 进行的操作类型
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	static EInventorySlotOperationType GetInventorySlotOperationType(ULyraInventoryManagerComponent* InventoryComponent, int32 SourceSlotIndex, int32 TargetSlotIndex);
 
 	// 丢掉物品到世界
 	UFUNCTION(BlueprintCallable, Category="Inventory")

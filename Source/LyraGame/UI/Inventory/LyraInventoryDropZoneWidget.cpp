@@ -23,7 +23,7 @@ void ULyraInventoryDropZoneWidget::NativeOnDragEnter(const FGeometry& InGeometry
 	ULyraInventoryDragVisualWidget* DragVisual = Cast<ULyraInventoryDragVisualWidget>(DragOperation->DefaultDragVisual);
 	if (!DragVisual) return ;
 
-	DragVisual->SetDragActionState(this, EDragActionState::EDAS_Drop);
+	DragVisual->SetDragOperationType(this, EInventorySlotOperationType::EISO_Drop);
 }
 
 void ULyraInventoryDropZoneWidget::NativeOnDragLeave(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
@@ -35,7 +35,7 @@ void ULyraInventoryDropZoneWidget::NativeOnDragLeave(const FDragDropEvent& InDra
 	ULyraInventoryDragVisualWidget* DragVisual = Cast<ULyraInventoryDragVisualWidget>(DragOperation->DefaultDragVisual);
 	if (!DragVisual) return ;
 
-	DragVisual->SetDragActionState(this, EDragActionState::EDAS_None);
+	DragVisual->SetDragOperationType(this, EInventorySlotOperationType::EISO_None);
 }
 
 bool ULyraInventoryDropZoneWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)

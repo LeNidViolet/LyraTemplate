@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InputAction.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "UI/LyraActivatableWidget.h"
 #include "LyraInventoryScreen.generated.h"
@@ -18,10 +17,15 @@ class ULyraEquipmentManagerComponent;
 class ULyraQuickBarComponent;
 class ULyraInventoryManagerComponent;
 enum class ECommonInputType : uint8;
+
+
 /**
- *
+ * 当使用手柄操作时, 需要提供一个选择模式, 以支持 Swap, Stack 的操作
+ * 当按下返回按钮时, 如果使用的手柄操作, 则先退出选择模式, 然后才能关闭界面
  */
-UCLASS()
+
+
+UCLASS(MinimalAPI)
 class ULyraInventoryScreen : public ULyraActivatableWidget
 {
 	GENERATED_BODY()
@@ -66,21 +70,9 @@ protected:
 
 	// Inventory Slot相关事件
 	UE_API void HandleInventorySlotFocused(ULyraInventorySlot* SlotWidget);
-	UFUNCTION(BlueprintImplementableEvent, Category="Inventory")
-	UE_API void K2_OnInventorySlotFocused(ULyraInventorySlot* SlotWidget);
-
 	UE_API void HandleInventorySlotUnfocused(ULyraInventorySlot* SlotWidget);
-	UFUNCTION(BlueprintImplementableEvent, Category="Inventory")
-	UE_API void K2_OnInventorySlotUnfocused(ULyraInventorySlot* SlotWidget);
-
-
 	UE_API void HandleInventorySlotHovered(ULyraInventorySlot* SlotWidget);
-	UFUNCTION(BlueprintImplementableEvent, Category="Inventory")
-	UE_API void K2_OnInventorySlotHovered(ULyraInventorySlot* SlotWidget);
-
 	UE_API void HandleInventorySlotUnhovered(ULyraInventorySlot* SlotWidget);
-	UFUNCTION(BlueprintImplementableEvent, Category="Inventory")
-	UE_API void K2_OnInventorySlotUnhovered(ULyraInventorySlot* SlotWidget);
 
 
 	UE_API void HandleInventorySlotClicked(ULyraInventorySlot* SlotWidget);
@@ -93,22 +85,9 @@ protected:
 
 	// Quick Slot相关事件
 	UE_API void HandleQuickBarSlotFocused(ULyraInventorySlot* SlotWidget);
-	UFUNCTION(BlueprintImplementableEvent, Category="Inventory")
-	UE_API void K2_OnQuickBarSlotFocused(ULyraInventorySlot* SlotWidget);
-
 	UE_API void HandleQuickBarSlotUnfocused(ULyraInventorySlot* SlotWidget);
-	UFUNCTION(BlueprintImplementableEvent, Category="Inventory")
-	UE_API void K2_OnQuickBarSlotUnfocused(ULyraInventorySlot* SlotWidget);
-
-
-
 	UE_API void HandleQuickBarSlotHovered(ULyraInventorySlot* SlotWidget);
-	UFUNCTION(BlueprintImplementableEvent, Category="Inventory")
-	UE_API void K2_OnQuickBarSlotHovered(ULyraInventorySlot* SlotWidget);
-
 	UE_API void HandleQuickBarSlotUnhovered(ULyraInventorySlot* SlotWidget);
-	UFUNCTION(BlueprintImplementableEvent, Category="Inventory")
-	UE_API void K2_OnQuickBarSlotUnfovered(ULyraInventorySlot* SlotWidget);
 
 
 
@@ -128,6 +107,11 @@ protected:
 
 	UE_API ULyraInventorySlot* GetCurrentFocusedInventorySlot() const;
 	UE_API ULyraInventorySlot* GetCurrentFocusedQuickBarSlot() const;
+
+	UFUNCTION(BlueprintPure, Category="Inventory")
+	UE_API bool IsUsingGamepad() const { return bIsUsingGamepad; }
+	UFUNCTION(BlueprintPure, Category="Inventory")
+	UE_API bool IsInSelectMode() const { return bIsInSelectMode; }
 
 
 	// Slot Widget Class
@@ -151,6 +135,9 @@ private:
 	FUIActionBindingHandle DropAllHandle;
 	FUIActionBindingHandle SelectHandle;
 
+	FText DropActionName;
+	void UpdateDropActionName();
+
 	FDelegateHandle InputMethodChangedHandle;
 	void HandleInputMethodChanged(ECommonInputType NewInputMethod);
 
@@ -173,12 +160,25 @@ private:
 	void InitializeUIWidgets();
 	void DeinitializeUIWidgets();
 
-	// 记录当前选中 / 焦点槽位
-	int32 FocusedInventorySlotIndex = INDEX_NONE;
-	int32 FocusedQuickBarSlotIndex = INDEX_NONE;
+	// 记录当前焦点 slot, 上一个焦点 slot
+	int32 PreviousFocusedInventorySlotIndex = INDEX_NONE;
+	int32 PreviousFocusedQuickBarSlotIndex = INDEX_NONE;
+	int32 CurrentFocusedInventorySlotIndex = INDEX_NONE;
+	int32 CurrentFocusedQuickBarSlotIndex = INDEX_NONE;
 
-	int32 SelectedInventorySlotIndex = INDEX_NONE;
-	int32 SelectedQuickBarSlotIndex = INDEX_NONE;
+	// 记录当前选中 slot
+	int32 CurrentSelectedInventorySlotIndex = INDEX_NONE;
+	int32 CurrentSelectedQuickBarSlotIndex = INDEX_NONE;
+
+	void EnterOrExitSelectMode();
+	void EnterSelectMode();
+	void ExitSelectMode();
+
+	// 当前是否是手柄操作
+	bool bIsUsingGamepad = false;
+
+	// 当前是否处于选择模式
+	bool bIsInSelectMode = false;
 
 	UPROPERTY()
 	TArray<TObjectPtr<ULyraInventorySlot>> InventorySlotWidgets;

@@ -4,18 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "CommonUserWidget.h"
+#include "Inventory/LyraInventoryFunctionLibrary.h"
 #include "LyraInventoryDragVisualWidget.generated.h"
 
 #define UE_API LYRAGAME_API
 
-UENUM(BlueprintType)
-enum class EDragActionState : uint8
-{
-	EDAS_None,
-	EDAS_Swap,
-	EDAS_Stack,
-	EDAS_Drop
-};
 
 UCLASS(MinimalAPI)
 class ULyraInventoryDragVisualWidget : public UCommonUserWidget
@@ -39,7 +32,7 @@ public:
 
 	// 设置拖拽操作状态
 	UFUNCTION(BlueprintCallable, Category="Inventory")
-	UE_API void SetDragActionState(UUserWidget* TriggerWidget, EDragActionState InState);
+	UE_API void SetDragOperationType(UUserWidget* TriggerWidget, EInventorySlotOperationType OperationType);
 	UFUNCTION(BlueprintImplementableEvent, Category="Inventory")
 	void K2_UpdateActionState();
 
@@ -52,7 +45,7 @@ protected:
 	FVector2D SlotSize = FVector2D(64.f, 64.f);
 
 	UPROPERTY(BlueprintReadOnly, Category="Inventory")
-	EDragActionState DragActionState = EDragActionState::EDAS_None;
+	EInventorySlotOperationType DragOperationType = EInventorySlotOperationType::EISO_None;
 
 	UPROPERTY()
 	TObjectPtr<UUserWidget> LastWidget;

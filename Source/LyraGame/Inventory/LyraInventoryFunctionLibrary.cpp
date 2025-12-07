@@ -95,6 +95,36 @@ FString ULyraInventoryFunctionLibrary::GetInventoryAddItemResultString(EInventor
 	}
 }
 
+EInventorySlotOperationType ULyraInventoryFunctionLibrary::GetInventorySlotOperationType(ULyraInventoryManagerComponent* InventoryComponent, int32 SourceSlotIndex, int32 TargetSlotIndex)
+{
+	EInventorySlotOperationType OperationType = EInventorySlotOperationType::EISO_None;
+	if (SourceSlotIndex == TargetSlotIndex) return OperationType;
+	if (!InventoryComponent) return OperationType;
+
+	ULyraInventoryItemInstance* ItemInstance = InventoryComponent->GetItemInstance(SourceSlotIndex);
+	if (!ItemInstance) return OperationType;
+	ULyraInventoryItemInstance* TargetSlotItemInstance = InventoryComponent->GetItemInstance(TargetSlotIndex);
+
+	OperationType = EInventorySlotOperationType::EISO_Swap;
+
+	// 目标槽位没有物品, 只能交换
+	if (!TargetSlotItemInstance) return OperationType;
+	// 物品类型不同, 只能交换
+	if (TargetSlotItemInstance->GetItemDef() != ItemInstance->GetItemDef()) return OperationType;
+
+	// 物品类型相同, 检测是否可以堆叠
+	const ULyraInventoryItemDefinition* ItemDef = GetDefault<ULyraInventoryItemDefinition>(ItemInstance->GetItemDef());
+	// 不允许堆叠, 只能交换
+	if (!ItemDef->bAllowStacking) return OperationType;
+
+	// 允许堆叠, 检测当前slot的堆叠数量是否已满
+	int32 CurrentStackCount = InventoryComponent->GetItemStackCount(TargetSlotIndex);
+	if (CurrentStackCount >= ItemDef->MaxStackCount) return OperationType;
+
+	OperationType = EInventorySlotOperationType::EISO_Stack;
+	return OperationType;
+}
+
 bool ULyraInventoryFunctionLibrary::DropInventoryItem(
 	APawn* Pawn,
 	ULyraInventoryItemInstance* ItemInstance,
