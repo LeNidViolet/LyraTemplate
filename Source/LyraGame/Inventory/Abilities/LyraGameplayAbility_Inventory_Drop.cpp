@@ -5,10 +5,8 @@
 
 #include "LyraLogChannels.h"
 #include "Interaction/LyraWorldCollectable.h"
-#include "Inventory/LyraInventoryItemDefinition.h"
 #include "Inventory/LyraInventoryItemInstance.h"
 #include "Inventory/LyraInventoryManagerComponent.h"
-#include "System/LyraSystemStatics.h"
 #include "TargetData/LyraGameplayAbilityTargetData_Inventory.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(LyraGameplayAbility_Inventory_Drop)
@@ -40,26 +38,28 @@ void ULyraGameplayAbility_Inventory_Drop::ActivateLocalPlayerAbility(
 
 bool ULyraGameplayAbility_Inventory_Drop::MakeTargetData(const FGameplayEventData* TriggerEventData)
 {
-	// 要丢弃的 ItemInstance / 数量 都在 TriggerEventData 里
-	const ULyraInventoryItemInstance* ItemInstance = Cast<ULyraInventoryItemInstance>(TriggerEventData->OptionalObject.Get());
-	if (!ItemInstance) return false;
-	int32 DropCount = static_cast<int32>(TriggerEventData->EventMagnitude);
-	if (DropCount <= 0) return false;
+	// 要丢弃的 ItemInstance / 数量 都在 TargetData 里
+	if (!TriggerEventData->TargetData.IsValid(0)) return false;
+
+	// 提取数据
+	const FGameplayAbilityTargetData* ClientTargetData = TriggerEventData->TargetData.Get(0);
+	const FLyraGameplayAbilityTargetData_Inventory_Drop* ClientDropTargetData = static_cast<const FLyraGameplayAbilityTargetData_Inventory_Drop*>(ClientTargetData);
+	if (!ClientDropTargetData) return false;
+	if (!ClientDropTargetData->ItemInstance) return false;
+	if (ClientDropTargetData->DropCount <= 0) return false;
 	const AActor* Instigator = TriggerEventData->Instigator.Get();
 	if (!Instigator) return false;
 
-	FVector DropLocation;
-	bool bOk = ULyraSystemStatics::FindValidSpawnLocationInCone(DropLocation, const_cast<AActor*>(Instigator));
-	if (!bOk) DropLocation = Instigator->GetActorLocation();
+	FVector DropLocation = ClientDropTargetData->DropLocation;
+	if (DropLocation.IsZero())
+	{
+		DropLocation = Instigator->GetActorLocation();
+	}
 
+	FLyraGameplayAbilityTargetData_Inventory_Drop* ServerDropTargetData = new FLyraGameplayAbilityTargetData_Inventory_Drop(*ClientDropTargetData);
+	ServerDropTargetData->DropLocation = DropLocation;
 
-	FLyraGameplayAbilityTargetData_Inventory* TargetData = new FLyraGameplayAbilityTargetData_Inventory();
-	TargetData->OperationType = EInventoryTargetDataOperationType::EITDOT_Drop;
-	TargetData->ItemInstance = const_cast<ULyraInventoryItemInstance*>(ItemInstance);
-	TargetData->DropCount = DropCount;
-	TargetData->DropLocation = DropLocation;
-
-	const FGameplayAbilityTargetDataHandle TargetDataHandle(TargetData);
+	const FGameplayAbilityTargetDataHandle TargetDataHandle(ServerDropTargetData);
 	NotifyTargetDataReady(TargetDataHandle, FGameplayTag());
 
 	return true;
@@ -85,7 +85,7 @@ void ULyraGameplayAbility_Inventory_Drop::ActivateAbilityWithTargetData_Implemen
 	{
 		AController* Controller = GetControllerFromActorInfo();
 		const FGameplayAbilityTargetData* BaseTargetData = TargetDataHandle.Get(0);
-		const FLyraGameplayAbilityTargetData_Inventory* TargetData = static_cast<const FLyraGameplayAbilityTargetData_Inventory*>(BaseTargetData);
+		const FLyraGameplayAbilityTargetData_Inventory_Drop* TargetData = static_cast<const FLyraGameplayAbilityTargetData_Inventory_Drop*>(BaseTargetData);
 		if (!TargetData || !Controller) { break; }
 		if (!TargetData->ItemInstance || TargetData->DropCount <= 0) { break; }
 		if (TargetData->DropLocation.IsZero()) { break; }

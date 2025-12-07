@@ -5,10 +5,13 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "UI/Foundation/LyraButtonBase.h"
+#include "LyraInventoryDragVisualWidget.h"
 #include "LyraInventorySlot.generated.h"
 
 #define UE_API LYRAGAME_API
 
+class ULyraInventoryDragDropOperation;
+class ULyraInventoryDragVisualWidget;
 class ULyraInventoryItemInstance;
 class ULyraInventoryManagerComponent;
 struct FOnInventoryStackChangeParameters;
@@ -36,8 +39,14 @@ protected:
 	UE_API virtual void NativeDestruct() override;
 	// ~ UCommonUserWidget
 
-	UE_API void RegisterMessageHandlers();
-	UE_API void UnregisterMessageHandlers();
+	// ~ Drag Drop
+	UE_API virtual FReply NativeOnPreviewMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	UE_API virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
+	UE_API virtual void NativeOnDragEnter(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+	UE_API virtual void NativeOnDragLeave(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+	UE_API virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+	// ~ Drag Drop
+
 
 	FGameplayMessageListenerHandle InventoryStackChangedEventListener;
 	UE_API void HandleInventoryStackChangeEvent(FGameplayTag Channel, const FOnInventoryStackChangeParameters& Parameters);
@@ -52,9 +61,14 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category="Inventory")
 	void K2_UpdateSlot();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Inventory")
+	TSubclassOf<ULyraInventoryDragVisualWidget> DragVisualClass;
+
 private:
 
 	void InitializeSlot();
+	void RegisterMessageHandlers();
+	void UnregisterMessageHandlers();
 
 	// UI 槽位索引
 	UPROPERTY()
@@ -62,6 +76,11 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<ULyraInventoryManagerComponent> InventoryManager;
+
+	EDragActionState LastDragActionState = EDragActionState::EDAS_None;
+
+	bool HandleDropSwapOperation(ULyraInventoryDragDropOperation* DragOperation);
+	bool HandleDropStackOperation(ULyraInventoryDragDropOperation* DragOperation);
 };
 
 #undef UE_API

@@ -7,28 +7,18 @@
 #define UE_API LYRAGAME_API
 
 class ULyraInventoryItemInstance;
-// 定义操作类型 丢弃 ? 交换 ?
-UENUM(BlueprintType)
-enum class EInventoryTargetDataOperationType : uint8
-{
-	EITDOT_Drop         UMETA(DisplayName = "Drop"),        // 丢弃道具
-	EITDOT_Swap         UMETA(DisplayName = "Swap"),        // 交换道具
-};
 
 
 
-// 自定义 TargetData 结构体用来传递消息 目前用来容纳 丢弃道具 交换道具的操作数据
+
 USTRUCT(BlueprintType)
-struct FLyraGameplayAbilityTargetData_Inventory : public FGameplayAbilityTargetData
+struct FLyraGameplayAbilityTargetData_Inventory_Drop : public FGameplayAbilityTargetData
 {
 	GENERATED_BODY()
 
 	//------------------------------------------------------
 	// 自定义数据 (想传递的任何数据)
 	//------------------------------------------------------
-
-	UPROPERTY()
-	EInventoryTargetDataOperationType OperationType = EInventoryTargetDataOperationType::EITDOT_Drop; // 操作类型
 
 	UPROPERTY()
 	TObjectPtr<ULyraInventoryItemInstance> ItemInstance = nullptr; // 道具实例 (将要丢弃/交换的道具)
@@ -53,7 +43,6 @@ struct FLyraGameplayAbilityTargetData_Inventory : public FGameplayAbilityTargetD
 	UE_API bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 	{
 		// 序列化所有自定义字段
-		Ar << OperationType;
 		Ar << ItemInstance;
 		Ar << DropCount;
 		Ar << DropLocation;
@@ -64,7 +53,107 @@ struct FLyraGameplayAbilityTargetData_Inventory : public FGameplayAbilityTargetD
 };
 // 告诉 UE 启用这个 Struct 的网络序列化
 template<>
-struct TStructOpsTypeTraits<FLyraGameplayAbilityTargetData_Inventory> : public TStructOpsTypeTraitsBase2<FLyraGameplayAbilityTargetData_Inventory>
+struct TStructOpsTypeTraits<FLyraGameplayAbilityTargetData_Inventory_Drop> : public TStructOpsTypeTraitsBase2<FLyraGameplayAbilityTargetData_Inventory_Drop>
+{
+	enum { WithNetSerializer = true };
+};
+
+
+
+USTRUCT(BlueprintType)
+struct FLyraGameplayAbilityTargetData_Inventory_Swap : public FGameplayAbilityTargetData
+{
+	GENERATED_BODY()
+
+	//------------------------------------------------------
+	// 自定义数据 (想传递的任何数据)
+	//------------------------------------------------------
+
+	UPROPERTY()
+	TObjectPtr<ULyraInventoryItemInstance> ItemInstance = nullptr; // 道具实例 (将要丢弃/交换的道具)
+
+	UPROPERTY()
+	int32 SourceSlotIndex = INDEX_NONE; // 源槽位索引
+
+	UPROPERTY()
+	int32 TargetSlotIndex = INDEX_NONE; // 目标槽位索引
+
+
+	//------------------------------------------------------
+	// 必需的虚函数重写
+	//------------------------------------------------------
+
+	/** 返回结构体类型 */
+	UE_API virtual UScriptStruct* GetScriptStruct() const override
+	{
+		return StaticStruct();
+	}
+
+	/** 网络序列化（必需实现） */
+	UE_API bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+	{
+		// 序列化所有自定义字段
+		Ar << ItemInstance;
+		Ar << SourceSlotIndex;
+		Ar << TargetSlotIndex;
+
+		bOutSuccess = true;
+		return true;
+	}
+};
+// 告诉 UE 启用这个 Struct 的网络序列化
+template<>
+struct TStructOpsTypeTraits<FLyraGameplayAbilityTargetData_Inventory_Swap> : public TStructOpsTypeTraitsBase2<FLyraGameplayAbilityTargetData_Inventory_Swap>
+{
+	enum { WithNetSerializer = true };
+};
+
+
+
+USTRUCT(BlueprintType)
+struct FLyraGameplayAbilityTargetData_Inventory_Stack : public FGameplayAbilityTargetData
+{
+	GENERATED_BODY()
+
+	//------------------------------------------------------
+	// 自定义数据 (想传递的任何数据)
+	//------------------------------------------------------
+
+	UPROPERTY()
+	TObjectPtr<ULyraInventoryItemInstance> ItemInstance = nullptr; // 道具实例 (将要丢弃/交换的道具)
+
+	UPROPERTY()
+	int32 SourceSlotIndex = INDEX_NONE; // 源槽位索引
+
+	UPROPERTY()
+	int32 TargetSlotIndex = INDEX_NONE; // 目标槽位索引
+
+
+	//------------------------------------------------------
+	// 必需的虚函数重写
+	//------------------------------------------------------
+
+	/** 返回结构体类型 */
+	UE_API virtual UScriptStruct* GetScriptStruct() const override
+	{
+		return StaticStruct();
+	}
+
+	/** 网络序列化（必需实现） */
+	UE_API bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+	{
+		// 序列化所有自定义字段
+		Ar << ItemInstance;
+		Ar << SourceSlotIndex;
+		Ar << TargetSlotIndex;
+
+		bOutSuccess = true;
+		return true;
+	}
+};
+// 告诉 UE 启用这个 Struct 的网络序列化
+template<>
+struct TStructOpsTypeTraits<FLyraGameplayAbilityTargetData_Inventory_Stack> : public TStructOpsTypeTraitsBase2<FLyraGameplayAbilityTargetData_Inventory_Stack>
 {
 	enum { WithNetSerializer = true };
 };

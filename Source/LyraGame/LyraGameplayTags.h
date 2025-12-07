@@ -84,5 +84,6 @@ namespace LyraGameplayTags
 
 	LYRAGAME_API	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Inventory_DropItem);
 	LYRAGAME_API	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Inventory_SwapItem);
+	LYRAGAME_API	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Inventory_StackItem);
 
 };

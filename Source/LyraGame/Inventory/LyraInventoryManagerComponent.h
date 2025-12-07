@@ -45,13 +45,13 @@ private:
 	TObjectPtr<ULyraInventoryItemInstance> ItemInstance = nullptr;
 	// 物品堆叠数量
 	UPROPERTY()
-	int32 StackCount = INDEX_NONE;
+	int32 StackCount = 0;
 
 	// 最后记录的数据, 用于变更检测
 	UPROPERTY(NotReplicated)
 	TObjectPtr<ULyraInventoryItemInstance> LastObservedInstance = nullptr;
 	UPROPERTY(NotReplicated)
-	int32 LastObservedStackCount = INDEX_NONE;
+	int32 LastObservedStackCount = 0;
 
 	// 注意在添加字段时需要 增删查改 接口里面的同步处理
 };
@@ -110,6 +110,10 @@ struct FLyraInventoryList : public FFastArraySerializer
 	void EraseItem(ULyraInventoryItemInstance* ItemInstance);
 	// 变更物品堆叠数量, 如果 NewCount <= 0 则移除该物品实例, 增量为 Delta
 	bool StackItem(ULyraInventoryItemInstance* ItemInstance, int32 Delta);
+	// 交换两个物品槽位
+	bool SwapItem(int32 SourceSlotIndex, int32 TargetSlotIndex);
+	// 合并两个物品数量
+	bool StackItem(int32 SourceSlotIndex, int32 TargetSlotIndex);
 
 private:
 	void BroadcastChangeMessage(FLyraInventoryItem& Item,
@@ -252,6 +256,19 @@ public:
 		ULyraInventoryItemInstance*& OutDroppedInstance,
 		int32& OutDroppedStackCount);
 
+	// 交换库存槽位
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = Inventory)
+	UE_API bool SwapItem(
+		ULyraInventoryItemInstance* SourceSlotItemInstance,
+		int32 SourceSlotIndex,
+		int32 TargetSlotIndex);
+
+	// 合并库存槽位
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = Inventory)
+	UE_API bool StackItem(
+		ULyraInventoryItemInstance* SourceSlotItemInstance,
+		int32 SourceSlotIndex,
+		int32 TargetSlotIndex);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = Inventory)
 	UE_API void RemoveItemInstance(ULyraInventoryItemInstance* ItemInstance, bool MarkAsGarbage = true);

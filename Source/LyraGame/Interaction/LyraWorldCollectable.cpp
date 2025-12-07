@@ -57,27 +57,6 @@ void ALyraWorldCollectable::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(ALyraWorldCollectable, bHasLanded);
 }
 
-void ALyraWorldCollectable::FitCollisionToMesh()
-{
-	if (!MeshComp || !MeshComp->GetStaticMesh()) return;
-
-	UBoxComponent* BoxComp = Cast<UBoxComponent>(CollisionComp);
-	if (!BoxComp) return;
-
-	FBoxSphereBounds MeshBounds = MeshComp->GetStaticMesh()->GetBounds();
-	FVector Scale3D = MeshComp->GetRelativeScale3D();
-	FVector FinalExtent = MeshBounds.BoxExtent * Scale3D;
-	FVector FinalOrigin = MeshBounds.Origin * Scale3D;
-	// 1. 设置 Box 大小 (Root)
-	BoxComp->SetBoxExtent(FinalExtent);
-
-	// 2. 不要动 Box 的位置！(它是 Root)
-	// BoxComp->SetRelativeLocation(FinalOrigin); // <--- 这会导致 Actor 瞬移到原点
-	// 3. 反向移动 Mesh，让 Mesh 的中心对齐到 Box 的中心
-	// 既然 Box 在 (0,0,0)，Mesh 的中心在 FinalOrigin
-	// 我们要把 Mesh 移到 -FinalOrigin，这样 Mesh 的中心就跑到了 (0,0,0)
-	MeshComp->SetRelativeLocation(-FinalOrigin);
-}
 
 
 
@@ -128,7 +107,7 @@ void ALyraWorldCollectable::ResetStaticMesh()
 	{
 		// 只有客户端 Mesh 会变更Transform
 		MeshComp->SetVisibility(true, true);
-		MeshComp->SetWorldLocation(GetActorLocation(), false, nullptr, ETeleportType::ResetPhysics);
+		MeshComp->SetWorldLocation(GetActorLocation(), false, nullptr, ETeleportType::TeleportPhysics);
 		MeshComp->SetWorldScale3D(FVector::OneVector);
 		MeshComp->SetRelativeLocation(FVector::ZeroVector);
 		MeshComp->SetRelativeScale3D(FVector::OneVector);
@@ -154,38 +133,6 @@ void ALyraWorldCollectable::SetPickupInventory(const FInventoryPickup& InInvento
 	}
 }
 
-void ALyraWorldCollectable::HandleVisualUpdate()
-{
-	// 进行简单的可视化更新
-
-	TSubclassOf<ULyraInventoryItemDefinition> ItemDefinition;
-	if (StaticInventory.Definitions.Num() > 0)
-	{
-		ItemDefinition = StaticInventory.Definitions[0].ItemDef;
-	}
-	if (StaticInventory.Instances.Num() > 0)
-	{
-		//这里即使 Num > 0, 对应的 Instance 也可能是 nullptr !
-		if (IsValid(StaticInventory.Instances[0].Item.Get()))
-		{
-			ItemDefinition = StaticInventory.Instances[0].Item->GetItemDef();
-		}
-	}
-	if (ItemDefinition)
-	{
-		ULyraInventoryItemDefinition* CDO = ItemDefinition.GetDefaultObject();
-		const ULyraInventoryItemFragment* Fragment = CDO->FindFragmentByClass(UInventoryFragment_PickupInfo::StaticClass());
-		if (Fragment)
-		{
-			const UInventoryFragment_PickupInfo* PickupInfo = Cast<UInventoryFragment_PickupInfo>(Fragment);
-			if (PickupInfo->DisplayMesh)
-			{
-				MeshComp->SetStaticMesh(PickupInfo->DisplayMesh.Get());
-			}
-		}
-	}
-}
-
 
 void ALyraWorldCollectable::OnRep_StaticInventory()
 {
@@ -193,16 +140,9 @@ void ALyraWorldCollectable::OnRep_StaticInventory()
 	{
 		// 目前只在 Standalone / Client 进行可视化更新
 
-		HandleVisualUpdate();
-
 		// 蓝图可在此进行可视化处理
 		K2_OnUpdated();
 		OnUpdated.Broadcast();
-
-		// TODO 注意碰撞体只在 Standalone / Client 进行了修正 目前碰撞体只为了交互检测使用
-		// 如果后面服务端需要碰撞体来处理业务, 这里的逻辑需要修正
-		// 可视化完成之后, 适配碰撞体
-		FitCollisionToMesh();
 	}
 }
 

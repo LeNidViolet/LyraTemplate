@@ -6,6 +6,7 @@
 #include "Engine/DataAsset.h"
 #include "Interaction/LyraWorldCollectable.h"
 #include "Interaction/LyraWorldMarker.h"
+#include "Inventory/InventoryFragment_Rarity.h"
 
 #include "LyraGameData.generated.h"
 
@@ -47,6 +48,24 @@ struct FLyraWorldMarkerCallout
 	// 使用的 Callout Widget 类
 	UPROPERTY(EditDefaultsOnly, Category = "WorldMarker")
 	TSubclassOf<UUserWidget> CalloutClass;
+};
+
+USTRUCT(BlueprintType)
+struct FLyraRarityInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rarity")
+	EInventoryItemRarity Rarity = EInventoryItemRarity::EIR_Unknown;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rarity")
+	FText DisplayName = FText::FromString("Unknown");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rarity")
+	FLinearColor Color = FLinearColor::White;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rarity")
+	FGameplayTag RarityTag = FGameplayTag();
 };
 
 
@@ -196,10 +215,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Inventory")
 	TObjectPtr<UCurveFloat> InventoryDropCurve;
 
+	// 物品稀有度信息列表
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Inventory")
+	TArray<FLyraRarityInfo> RarityInfoList;
 
-	// 默认使用的可拾取类类型
-	// UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="WorldCollectable")
-	// TSubclassOf<ALyraWorldCollectable> WorldCollectableClass = ALyraWorldCollectable::StaticClass();
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	FLyraRarityInfo GetRarityInfo(EInventoryItemRarity Rarity) const;
 };
 
 #undef UE_API

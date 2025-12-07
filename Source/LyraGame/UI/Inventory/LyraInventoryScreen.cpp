@@ -3,17 +3,18 @@
 
 #include "LyraInventoryScreen.h"
 
-#include "AbilitySystemBlueprintLibrary.h"
+
 #include "CommonInputSubsystem.h"
 #include "LyraGameplayTags.h"
+#include "LyraInventoryDragVisualWidget.h"
 #include "LyraInventorySlot.h"
 #include "LyraLogChannels.h"
 #include "Components/UniformGridPanel.h"
 #include "Equipment/LyraEquipmentManagerComponent.h"
 #include "Equipment/LyraQuickBarComponent.h"
 #include "Input/CommonUIInputTypes.h"
+#include "Inventory/LyraInventoryFunctionLibrary.h"
 #include "Inventory/LyraInventoryManagerComponent.h"
-#include "Messages/LyraNotificationMessage_Inventory.h"
 #include "System/LyraGameData.h"
 #include "System/LyraSystemStatics.h"
 #include "UI/Misc/LyraUINaviSubsystem.h"
@@ -263,27 +264,7 @@ void ULyraInventoryScreen::DropActionDo(bool DropAll)
 		return;
 	}
 
-	FVector DropLocation;
-	bool bOk = ULyraSystemStatics::FindValidSpawnLocationInCone(
-		DropLocation,
-		Pawn);
-	if (!bOk)
-	{
-		DropLocation = Pawn->GetActorLocation();
-	}
-
-	FGameplayEventData EventData;
-	EventData.EventTag = LyraGameplayTags::GameplayEvent_Inventory_DropItem;
-	EventData.Instigator = Pawn;
-	EventData.Target = Pawn;
-	EventData.OptionalObject = ItemInstance;
-	EventData.EventMagnitude = DropCount;
-
-	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-		Pawn,
-		LyraGameplayTags::GameplayEvent_Inventory_DropItem,
-		EventData
-	);
+	ULyraInventoryFunctionLibrary::DropInventoryItem(Pawn, ItemInstance, DropCount);
 }
 
 

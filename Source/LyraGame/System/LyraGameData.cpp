@@ -37,3 +37,15 @@ TSubclassOf<UUserWidget> ULyraGameData::GetCalloutClassForMarkerType(ELyraWorldM
 	}
 	return TSubclassOf<UUserWidget>();
 }
+
+FLyraRarityInfo ULyraGameData::GetRarityInfo(EInventoryItemRarity Rarity) const
+{
+	for (const FLyraRarityInfo& RarityInfo : RarityInfoList)
+	{
+		if (RarityInfo.Rarity == Rarity)
+		{
+			return RarityInfo;
+		}
+	}
+	return FLyraRarityInfo();
+}

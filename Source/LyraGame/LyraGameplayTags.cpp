@@ -91,6 +91,8 @@ namespace LyraGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Inventory_DropItem, "GameplayEvent.Inventory.DropItem", "Event to trigger dropping an item from the inventory.");
 	// 触发交换道具位置技能
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Inventory_SwapItem, "GameplayEvent.Inventory.SwapItem", "Event to trigger swapping item positions within the inventory.");
+	// 触发道具堆叠技能
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Inventory_StackItem, "GameplayEvent.Inventory.StackItem", "Event to trigger stacking items within the inventory.");
 
 
 

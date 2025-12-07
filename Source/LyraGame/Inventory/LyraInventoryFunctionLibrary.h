@@ -25,6 +25,8 @@ class ULyraInventoryFunctionLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
+public:
+
 	// 查找物品定义碎片
 	// Find item definition fragment
 	UFUNCTION(BlueprintPure, Category="Inventory", meta=(DeterminesOutputType=FragmentClass))
@@ -48,6 +50,18 @@ class ULyraInventoryFunctionLibrary : public UBlueprintFunctionLibrary
 
 	UFUNCTION(BlueprintPure, Category = "Inventory")
 	static FString GetInventoryAddItemResultString(EInventoryCanAddItemResult Result);
+
+	// 丢掉物品到世界
+	UFUNCTION(BlueprintCallable, Category="Inventory")
+	static bool DropInventoryItem(APawn* Pawn, ULyraInventoryItemInstance* ItemInstance, int32 DropCount);
+
+	// 交换物品槽位
+	UFUNCTION(BlueprintCallable, Category="Inventory")
+	static bool SwapInventoryItem(APawn* Pawn, ULyraInventoryItemInstance* SourceSlotItemInstance, int32 SourceSlotIndex, int32 TargetSlotIndex);
+
+	// 合并两个槽位道具数量
+	UFUNCTION(BlueprintCallable, Category="Inventory")
+	static bool StackInventoryItem(APawn* Pawn, ULyraInventoryItemInstance* SourceSlotItemInstance, int32 SourceSlotIndex, int32 TargetSlotIndex);
 };
 
 

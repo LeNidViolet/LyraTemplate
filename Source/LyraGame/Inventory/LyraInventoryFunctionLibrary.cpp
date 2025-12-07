@@ -3,11 +3,17 @@
 
 #include "LyraInventoryFunctionLibrary.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "InventoryFragment_Rarity.h"
+#include "LyraGameplayTags.h"
 #include "LyraInventoryItemDefinition.h"
 #include "LyraInventoryItemInstance.h"
 #include "LyraInventoryManagerComponent.h"
+#include "System/LyraGameData.h"
+#include "System/LyraSystemStatics.h"
 #include "Weapons/InventoryFragment_Ammo.h"
+#include "TargetData/LyraGameplayAbilityTargetData_Inventory.h"
+
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(LyraInventoryFunctionLibrary)
 
@@ -23,45 +29,12 @@ const ULyraInventoryItemFragment* ULyraInventoryFunctionLibrary::FindItemDefinit
 
 FLinearColor ULyraInventoryFunctionLibrary::GetRarityColor(EInventoryItemRarity Rarity)
 {
-	switch (Rarity)
-	{
-	case EInventoryItemRarity::EIR_Uncommon:
-		return FLinearColor(0.0f, 0.66f, 0.0f); // 绿色
-	case EInventoryItemRarity::EIR_Rare:
-		return FLinearColor(0.0f, 0.33f, 0.66f); // 蓝色
-	case EInventoryItemRarity::EIR_Epic:
-		return FLinearColor(0.66f, 0.0f, 0.66f); // 紫色
-	case EInventoryItemRarity::EIR_Legendary:
-		return FLinearColor(1.0f, 0.66f, 0.0f); // 橙色
-	case EInventoryItemRarity::EIR_Mythic:
-		return FLinearColor(1.0f, 0.22f, 0.22f); // 红色
-	case EInventoryItemRarity::EIR_Common:
-	case EInventoryItemRarity::EIR_Unknown:
-	default:
-		return FLinearColor(0.66f, 0.66f, 0.66f); // 灰色
-	}
+	return ULyraGameData::Get().GetRarityInfo(Rarity).Color;
 }
 
 FText ULyraInventoryFunctionLibrary::GetRarityName(EInventoryItemRarity Rarity)
 {
-	switch (Rarity)
-	{
-	case EInventoryItemRarity::EIR_Common:
-		return FText::FromString(TEXT("Common"));
-	case EInventoryItemRarity::EIR_Uncommon:
-		return FText::FromString(TEXT("Uncommon"));
-	case EInventoryItemRarity::EIR_Rare:
-		return FText::FromString(TEXT("Rare"));
-	case EInventoryItemRarity::EIR_Epic:
-		return FText::FromString(TEXT("Epic"));
-	case EInventoryItemRarity::EIR_Legendary:
-		return FText::FromString(TEXT("Legendary"));
-	case EInventoryItemRarity::EIR_Mythic:
-		return FText::FromString(TEXT("Mythic"));
-	case EInventoryItemRarity::EIR_Unknown:
-	default:
-		return FText::FromString(TEXT("Unknown"));
-	}
+	return ULyraGameData::Get().GetRarityInfo(Rarity).DisplayName;
 }
 
 int32 ULyraInventoryFunctionLibrary::GetAmmoCount(ULyraInventoryManagerComponent* InventoryComponent, EWeaponAmmoType AmmoType)
@@ -120,4 +93,121 @@ FString ULyraInventoryFunctionLibrary::GetInventoryAddItemResultString(EInventor
 	default:
 		return TEXT("Invalid Data");
 	}
+}
+
+bool ULyraInventoryFunctionLibrary::DropInventoryItem(
+	APawn* Pawn,
+	ULyraInventoryItemInstance* ItemInstance,
+	int32 DropCount)
+{
+	if (!Pawn || !ItemInstance || DropCount <= 0)
+	{
+		return false;
+	}
+
+	FVector DropLocation;
+	bool bOk = ULyraSystemStatics::FindValidSpawnLocationInCone(
+		DropLocation,
+		Pawn);
+	if (!bOk)
+	{
+		DropLocation = Pawn->GetActorLocation();
+	}
+
+
+	// 这里使用TargetData传递消息给技能系统, 这个结构同时也是客户端技能与服务器通讯时使用的数据结构
+	// 这个数据结构由TargetDataHandle接管负责释放
+	FLyraGameplayAbilityTargetData_Inventory_Drop* DropTargetData = new FLyraGameplayAbilityTargetData_Inventory_Drop();
+	DropTargetData->ItemInstance = ItemInstance;
+	DropTargetData->DropCount = DropCount;
+	DropTargetData->DropLocation = DropLocation;
+
+	FGameplayAbilityTargetDataHandle TargetDataHandle;
+	TargetDataHandle.Add(DropTargetData);
+
+	FGameplayEventData EventData;
+	EventData.EventTag = LyraGameplayTags::GameplayEvent_Inventory_DropItem;
+	EventData.Instigator = Pawn;
+	EventData.Target = Pawn;
+	EventData.TargetData = TargetDataHandle;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+		Pawn,
+		LyraGameplayTags::GameplayEvent_Inventory_DropItem,
+		EventData
+	);
+
+	return true;
+}
+
+bool ULyraInventoryFunctionLibrary::SwapInventoryItem(
+	APawn* Pawn,
+	ULyraInventoryItemInstance* SourceSlotItemInstance,
+	int32 SourceSlotIndex,
+	int32 TargetSlotIndex)
+{
+	if (!Pawn || !SourceSlotItemInstance || SourceSlotIndex == TargetSlotIndex)
+	{
+		return false;
+	}
+
+	// 这里使用TargetData传递消息给技能系统, 这个结构同时也是客户端技能与服务器通讯时使用的数据结构
+	// 这个数据结构由TargetDataHandle接管负责释放
+	FLyraGameplayAbilityTargetData_Inventory_Swap* SwapTargetData = new FLyraGameplayAbilityTargetData_Inventory_Swap();
+	SwapTargetData->ItemInstance = SourceSlotItemInstance;
+	SwapTargetData->SourceSlotIndex = SourceSlotIndex;
+	SwapTargetData->TargetSlotIndex = TargetSlotIndex;
+
+	FGameplayAbilityTargetDataHandle TargetDataHandle;
+	TargetDataHandle.Add(SwapTargetData);
+
+	FGameplayEventData EventData;
+	EventData.EventTag = LyraGameplayTags::GameplayEvent_Inventory_SwapItem;
+	EventData.Instigator = Pawn;
+	EventData.Target = Pawn;
+	EventData.TargetData = TargetDataHandle;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+		Pawn,
+		LyraGameplayTags::GameplayEvent_Inventory_SwapItem,
+		EventData
+	);
+
+	return true;
+}
+
+bool ULyraInventoryFunctionLibrary::StackInventoryItem(
+	APawn* Pawn,
+	ULyraInventoryItemInstance* SourceSlotItemInstance,
+	int32 SourceSlotIndex,
+	int32 TargetSlotIndex)
+{
+	if (!Pawn || !SourceSlotItemInstance || SourceSlotIndex == TargetSlotIndex)
+	{
+		return false;
+	}
+
+	// 这里使用TargetData传递消息给技能系统, 这个结构同时也是客户端技能与服务器通讯时使用的数据结构
+	// 这个数据结构由TargetDataHandle接管负责释放
+	FLyraGameplayAbilityTargetData_Inventory_Stack* StackTargetData = new FLyraGameplayAbilityTargetData_Inventory_Stack();
+	StackTargetData->ItemInstance = SourceSlotItemInstance;
+	StackTargetData->SourceSlotIndex = SourceSlotIndex;
+	StackTargetData->TargetSlotIndex = TargetSlotIndex;
+
+	FGameplayAbilityTargetDataHandle TargetDataHandle;
+	TargetDataHandle.Add(StackTargetData);
+
+	FGameplayEventData EventData;
+	EventData.EventTag = LyraGameplayTags::GameplayEvent_Inventory_StackItem;
+	EventData.Instigator = Pawn;
+	EventData.Target = Pawn;
+	EventData.TargetData = TargetDataHandle;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+		Pawn,
+		LyraGameplayTags::GameplayEvent_Inventory_StackItem,
+		EventData
+	);
+
+	return true;
 }

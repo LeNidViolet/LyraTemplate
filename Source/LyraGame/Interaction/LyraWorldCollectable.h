@@ -223,8 +223,6 @@ protected:
 
 private:
 	void OnCoolingDownTimeout(UAbilitySystemComponent* ASC, const APawn* InstigatorPawn);
-	void FitCollisionToMesh();
-	void HandleVisualUpdate();
 };
 
 #undef UE_API
