@@ -3,7 +3,6 @@
 #include "LyraWorldCollectable.h"
 
 #include "AbilitySystemComponent.h"
-#include "LyraLogChannels.h"
 #include "Async/TaskGraphInterfaces.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -29,7 +28,6 @@ ALyraWorldCollectable::ALyraWorldCollectable()
 
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetupAttachment(RootComponent);
-	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);	// Mesh不参与碰撞
 
 	ProjectileComp = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("FallMovementComp"));
 	ProjectileComp->UpdatedComponent = RootComponent;
@@ -136,6 +134,10 @@ void ALyraWorldCollectable::SetPickupInventory(const FInventoryPickup& InInvento
 
 void ALyraWorldCollectable::OnRep_StaticInventory()
 {
+	// 在客户端/服务端都调整一下 Collision 以适应新的物品形状
+	// 主要是客户端需要调整碰撞以便拾取检测
+	FitCollisionToMesh();
+
 	if (!IsNetMode(NM_DedicatedServer))
 	{
 		// 目前只在 Standalone / Client 进行可视化更新
@@ -369,6 +371,35 @@ void ALyraWorldCollectable::NotifyFinished(UAbilitySystemComponent* ASC, const A
 
 	// 在服务端销毁它
 	this->SetLifeSpan(LifeAfterFinished);
+}
+
+
+
+void ALyraWorldCollectable::FitCollisionToMesh()
+{
+	// 根据 Mesh 重新调整碰撞盒大小
+	ULyraInventoryItemDefinition* ItemDefinition = nullptr;
+	if (StaticInventory.Definitions.Num() > 0)
+	{
+		ItemDefinition = StaticInventory.Definitions[0].ItemDef.GetDefaultObject();
+	}
+	else if (StaticInventory.Instances.Num() > 0)
+	{
+		if (StaticInventory.Instances[0].Item)
+			ItemDefinition = StaticInventory.Instances[0].Item->GetItemDef().GetDefaultObject();
+	}
+	if (ItemDefinition)
+	{
+		const UInventoryFragment_PickupInfo* PickupInfo = Cast<UInventoryFragment_PickupInfo>(ItemDefinition->FindFragmentByClass(UInventoryFragment_PickupInfo::StaticClass()));
+		if (PickupInfo && PickupInfo->DisplayMesh)
+		{
+			FBoxSphereBounds Bounds = PickupInfo->DisplayMesh->GetBounds();
+			FVector Scale3D = CollisionComp->GetRelativeScale3D();
+
+			CollisionComp->SetBoxExtent(Bounds.BoxExtent * Scale3D);
+			MeshComp->SetRelativeLocation(Bounds.Origin * Scale3D * -1.0f);
+		}
+	}
 }
 
 

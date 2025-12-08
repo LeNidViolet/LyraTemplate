@@ -195,6 +195,8 @@ void ULyraInventoryScreen::HandleInventorySlotUnfocused(ULyraInventorySlot* Slot
 		CurrentFocusedInventorySlotIndex = INDEX_NONE;
 		HandleInventorySlotFocusChanged(CurrentFocusedInventorySlotIndex, PreviousFocusedInventorySlotIndex);
 	}
+
+	UpdateDropActionName();
 }
 
 // Inventory 追踪焦点槽位
@@ -448,6 +450,16 @@ ULyraInventorySlot* ULyraInventoryScreen::GetCurrentFocusedQuickBarSlot() const
 	if (QuickBarSlotWidgets.IsValidIndex(CurrentFocusedQuickBarSlotIndex))
 	{
 		return QuickBarSlotWidgets[CurrentFocusedQuickBarSlotIndex];
+	}
+	return nullptr;
+}
+
+ULyraInventoryItemInstance* ULyraInventoryScreen::GetCurrentFocusedInventoryItemInstance() const
+{
+	ULyraInventorySlot* SlotWidget = GetCurrentFocusedInventorySlot();
+	if (SlotWidget)
+	{
+		return InventoryManagerComponent->GetItemInstance(SlotWidget->GetSlotIndex());
 	}
 	return nullptr;
 }

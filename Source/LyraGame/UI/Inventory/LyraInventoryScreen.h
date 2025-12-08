@@ -11,6 +11,7 @@
 #define UE_API LYRAGAME_API
 
 
+class ULyraInventoryItemInstance;
 class ULyraInventorySlot;
 struct FOnInventoryStackChangeParameters;
 class ULyraEquipmentManagerComponent;
@@ -105,8 +106,13 @@ protected:
 	UE_API void K2_OnQuickBarSlotFocusChanged(int32 NewFocusedSlotIndex, int32 OldFocusedSlotIndex);
 
 
+	UFUNCTION(BlueprintPure, Category="Inventory")
 	UE_API ULyraInventorySlot* GetCurrentFocusedInventorySlot() const;
+	UFUNCTION(BlueprintPure, Category="Inventory")
 	UE_API ULyraInventorySlot* GetCurrentFocusedQuickBarSlot() const;
+
+	UFUNCTION(BlueprintPure, Category="Inventory")
+	UE_API ULyraInventoryItemInstance* GetCurrentFocusedInventoryItemInstance() const;
 
 	UFUNCTION(BlueprintPure, Category="Inventory")
 	UE_API bool IsUsingGamepad() const { return bIsUsingGamepad; }
