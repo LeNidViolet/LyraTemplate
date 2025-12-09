@@ -181,15 +181,13 @@ enum class EInventoryCanAddItemResult : uint8
 // 考虑到物品可能不会全部添加成功, 因此剩余的物品应该使用原 WorldCollectable
 // 放回世界内; 调用者应当检查是否全部添加成功, 并负责 WorldCollectable
 // 的销毁操作 如果 Instance 只有部分能放进背包, 会创建一个新的 Instance
-// 放到背包中, 原 Instance 会更新剩余数量留在 WorldCollectable 中 Instance 由
-// WorldCollectable 转移给背包时, 会进行Owner的转移以及网络复制的切换 创建的新的
-// Instance 也会进行相应的 Owner 和 网络复制设置 目前 Owner 设置为
-// InventoryManager 的Owner, 网络复制由 InventoryManager 负责
+// 放到背包中, 原 Instance 会更新剩余数量留在 WorldCollectable 中
+// 如果全部添加成功, Instance 会随 WorldCollectable 销毁, 背包中通过DuplicateObject创建新的 Instance
+
 
 // 丢弃逻辑:
-// 如果是全部丢弃, 直接将 Instance 从背包放入 InventoryPickup
-// 如果是部分丢弃, 将创建新的 Instance 放入 InventoryPickup, 原 Instance
-// 留在背包中
+// 如果是全部丢弃, 将创建新的 Instance 放入 InventoryPickup, 原 Instance 销毁
+// 如果是部分丢弃, 将创建新的 Instance 放入 InventoryPickup, 原 Instance 留在背包中
 
 /**
  * Manages an inventory
