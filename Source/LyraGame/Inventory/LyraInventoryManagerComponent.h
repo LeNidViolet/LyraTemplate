@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Components/ActorComponent.h"
-#include "Messages/LyranotificationMessage_Inventory.h"
+#include "Messages/LyraNotificationMessage_Inventory.h"
 #include "Net/Serialization/FastArraySerializer.h"
 #include "LyraInventoryManagerComponent.generated.h"
 

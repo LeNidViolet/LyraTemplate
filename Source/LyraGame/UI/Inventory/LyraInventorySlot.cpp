@@ -7,7 +7,7 @@
 #include "LyraInventoryDragDropOperation.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Inventory/LyraInventoryManagerComponent.h"
-#include "Messages/LyranotificationMessage_Inventory.h"
+#include "Messages/LyraNotificationMessage_Inventory.h"
 #include "Inventory/LyraInventoryFunctionLibrary.h"
 #include "Inventory/LyraInventoryItemDefinition.h"
 #include "Inventory/LyraInventoryItemInstance.h"
