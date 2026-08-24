@@ -1,11 +1,11 @@
 
 # Lyra Template for Unreal Engine 5
 
-Unreal Engine Version: 5.7.0 (Source Build)
+Unreal Engine Version: 5.8.1 (Official Pre-compiled)
 
-Lyra Version: Compatible with UE 5.7
+Lyra Version: Compatible with UE 5.8
 
-Macos 15.7.1 / Rider 2025.3
+Macos 15.7.1 / Rider 2026.2.1
 
 ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
