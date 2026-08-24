@@ -17,13 +17,8 @@
 	"Modules": [
 		{
 			"Name": "CommonLoadingScreen",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
-		},
-		{
-			"Name": "CommonStartupLoadingScreen",
-			"Type": "ClientOnly",
-			"LoadingPhase": "PreLoadingScreen"
+			"Type": "RuntimeNoCommandlet",
+			"LoadingPhase": "PreEarlyLoadingScreen"
 		}
 	]
 }

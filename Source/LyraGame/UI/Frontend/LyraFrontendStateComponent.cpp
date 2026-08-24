@@ -140,22 +140,29 @@ void ULyraFrontendStateComponent::FlowStep_TryShowPressStartScreen(FControlFlowN
 	if (UPrimaryGameLayout* RootLayout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this))
 	{
 		constexpr bool bSuspendInputUntilComplete = true;
+		TWeakObjectPtr<ULyraFrontendStateComponent> WeakThis = this;
 		RootLayout->PushWidgetToLayerStackAsync<UCommonActivatableWidget>(FrontendTags::TAG_UI_LAYER_MENU, bSuspendInputUntilComplete, PressStartScreenClass,
-			[this, SubFlow](EAsyncWidgetLayerState State, UCommonActivatableWidget* Screen) {
-			switch (State)
+			[this, WeakThis, SubFlow](EAsyncWidgetLayerState State, UCommonActivatableWidget* Screen)
+
 			{
-			case EAsyncWidgetLayerState::AfterPush:
-				bShouldShowLoadingScreen = false;
-				Screen->OnDeactivated().AddWeakLambda(this, [this, SubFlow]() {
-					SubFlow->ContinueFlow();
-				});
-				break;
-			case EAsyncWidgetLayerState::Canceled:
-				bShouldShowLoadingScreen = false;
-				SubFlow->ContinueFlow();
-				return;
+				if (WeakThis.IsValid())
+				{
+					switch (State)
+					{
+					case EAsyncWidgetLayerState::AfterPush:
+						bShouldShowLoadingScreen = false;
+						Screen->OnDeactivated().AddWeakLambda(this, [this, SubFlow]() {
+							SubFlow->ContinueFlow();
+						});
+						break;
+					case EAsyncWidgetLayerState::Canceled:
+						bShouldShowLoadingScreen = false;
+						SubFlow->ContinueFlow();
+						return;
+					}
+				}
 			}
-		});
+		);
 	}
 }
 
@@ -224,20 +231,25 @@ void ULyraFrontendStateComponent::FlowStep_TryShowMainScreen(FControlFlowNodeRef
 	if (UPrimaryGameLayout* RootLayout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this))
 	{
 		constexpr bool bSuspendInputUntilComplete = true;
+		TWeakObjectPtr<ULyraFrontendStateComponent> WeakThis = this;
 		RootLayout->PushWidgetToLayerStackAsync<UCommonActivatableWidget>(FrontendTags::TAG_UI_LAYER_MENU, bSuspendInputUntilComplete, MainScreenClass,
-			[this, SubFlow](EAsyncWidgetLayerState State, UCommonActivatableWidget* Screen) {
-			switch (State)
+			[this, WeakThis, SubFlow](EAsyncWidgetLayerState State, UCommonActivatableWidget* Screen)
 			{
-			case EAsyncWidgetLayerState::AfterPush:
-				bShouldShowLoadingScreen = false;
-				SubFlow->ContinueFlow();
-				return;
-			case EAsyncWidgetLayerState::Canceled:
-				bShouldShowLoadingScreen = false;
-				SubFlow->ContinueFlow();
-				return;
+				if (WeakThis.IsValid())
+				{
+					switch (State)
+					{
+					case EAsyncWidgetLayerState::AfterPush:
+						bShouldShowLoadingScreen = false;
+						SubFlow->ContinueFlow();
+						return;
+					case EAsyncWidgetLayerState::Canceled:
+						bShouldShowLoadingScreen = false;
+						SubFlow->ContinueFlow();
+						return;
+					}
+				}
 			}
-		});
+		);
 	}
 }
-

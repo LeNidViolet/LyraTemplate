@@ -104,7 +104,7 @@ bool UEditorValidator_Load::GetLoadWarningsAndErrorsForPackage(const FString& Pa
 					int32 LoadFlags = LOAD_ForDiff;
 					{
 						TArray<UObject*> AllExistingObjects;
-						GetObjectsWithPackage(ExistingPackage, AllExistingObjects, false);
+						GetObjectsWithPackage(ExistingPackage, AllExistingObjects, EGetObjectsFlags::None);
 						TArray<UBlueprint*> AllNonDOBPs;
 						for (UObject* Obj : AllExistingObjects)
 						{

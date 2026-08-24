@@ -144,7 +144,7 @@ private:
 	void ApplyDisplayGamma();
 	
 	UPROPERTY(Config)
-	float DisplayGamma = 2.2;
+	float DisplayGamma = 2.2f;
 
 	//////////////////////////////////////////////////////////////////
 	// Display
@@ -168,6 +168,11 @@ public:
 	float GetFrameRateLimit_Always() const;
 	UFUNCTION()
 	void SetFrameRateLimit_Always(float NewLimitFPS);
+
+	UFUNCTION()
+	float GetDynamicResolutionFrameRateTarget() const;
+	UFUNCTION()
+	void SetDynamicResolutionFrameRateTarget(float NewDynamicResolutionFPS);
 
 protected:
 	void UpdateEffectiveFrameRateLimit();

@@ -32,6 +32,15 @@ enum class ELyraAllowBackgroundAudioSetting : uint8
 	Num UMETA(Hidden),
 };
 
+UENUM()
+enum class ELyraGamepadInputAPIOption : uint8
+{
+	Legacy,	// XInput + WinDualShock
+	Modern,	// GameInput API
+
+	Num UMETA(Hidden),
+};
+
 UENUM(BlueprintType)
 enum class ELyraGamepadSensitivity : uint8
 {
@@ -82,7 +91,7 @@ public:
 
 	/** Creates a temporary settings object, this will be replaced by one loaded from the user's save game */
 	static ULyraSettingsShared* CreateTemporarySettings(const ULyraLocalPlayer* LocalPlayer);
-	
+
 	/** Synchronously loads a settings object, this is not valid to call before login */
 	static ULyraSettingsShared* LoadOrCreateSettings(const ULyraLocalPlayer* LocalPlayer);
 
@@ -96,7 +105,7 @@ public:
 
 	/** Applies the current settings to the player */
 	void ApplySettings();
-	
+
 public:
 	////////////////////////////////////////////////////////
 	// Color Blind Options
@@ -126,7 +135,7 @@ public:
 
 	UFUNCTION()
 	void SetForceFeedbackEnabled(const bool NewValue) { ChangeValueAndDirty(bForceFeedbackEnabled, NewValue); }
-	
+
 private:
 	/** Is force feedback enabled when a controller is being used? */
 	UPROPERTY()
@@ -159,6 +168,18 @@ private:
 	/** Holds the gamepad look stick dead zone value. */
 	UPROPERTY()
 	float GamepadLookStickDeadZone;
+
+	/////////////////////////////////////////////////
+	// Gamepad Input API (only available on PC)
+
+	UPROPERTY()
+	ELyraGamepadInputAPIOption GamepadInputAPIOptions;
+
+public:
+	UFUNCTION()
+	ELyraGamepadInputAPIOption GetGamepadInputAPIOption() const { return GamepadInputAPIOptions; }
+	UFUNCTION()
+	void SetGamepadInputAPIOption(const ELyraGamepadInputAPIOption NewValue);
 
 	////////////////////////////////////////////////////////
 	// Gamepad Trigger Haptics

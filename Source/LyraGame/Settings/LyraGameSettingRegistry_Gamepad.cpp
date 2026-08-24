@@ -2,6 +2,8 @@
 
 #include "CommonInputBaseTypes.h"
 #include "DataSource/GameSettingDataSource.h"
+#include "EditCondition/WhenCondition.h"
+#include "GameFramework/InputSettings.h"
 #include "GameSettingCollection.h"
 #include "GameSettingValueDiscreteDynamic.h"
 #include "GameSettingValueScalarDynamic.h"
@@ -225,6 +227,52 @@ UGameSettingCollection* ULyraGameSettingRegistry::InitializeGamepadSettings(ULyr
 			DeadZone->AddSetting(Setting);
 		}
 		//----------------------------------------------------------------------------------
+	}
+
+		// Gamepad Input API
+	////////////////////////////////////////////////////////////////////////////////////
+	{
+		UGameSettingCollection* GamepadInputAPI = NewObject<UGameSettingCollection>();
+		GamepadInputAPI->SetDevName(TEXT("GamepadInputAPI"));
+		GamepadInputAPI->SetDisplayName(LOCTEXT("GamepadInputAPI_Name", "Gamepad Input API"));
+		Screen->AddSetting(GamepadInputAPI);
+
+		// Enum option for which input API to use
+		{
+			UGameSettingValueDiscreteDynamic_Enum* Setting = NewObject<UGameSettingValueDiscreteDynamic_Enum>();
+			Setting->SetDevName(TEXT("GamepadInputAPI_Option"));
+			Setting->SetDisplayName(LOCTEXT("GamepadInputAPI_Option_Name", "Gamepad Input API"));
+			Setting->SetDescriptionRichText(LOCTEXT("GamepadInputAPI_Option_Description", "Which API should be used for processing gamepad input on PC devices.\n\nChanging this may improve compatibility with more input devices.\n\nChanging this setting requires a restart to take effect."));
+
+			Setting->SetDynamicGetter(GET_SHARED_SETTINGS_FUNCTION_PATH(GetGamepadInputAPIOption));
+			Setting->SetDynamicSetter(GET_SHARED_SETTINGS_FUNCTION_PATH(SetGamepadInputAPIOption));
+			Setting->SetDefaultValue(GetDefault<ULyraSettingsShared>()->GetGamepadInputAPIOption());
+
+			// This feature is only available on PC
+			const TSharedRef<FWhenCondition> WhenPlatformSupportsChangingGamepadAPI = MakeShared<FWhenCondition>(
+			[](const ULocalPlayer*, FGameSettingEditableState& InOutEditState)
+			{
+				// GameInput is unavailable on WinArm64 now, this is expected to change by mid 2026.
+				if (!PLATFORM_WINDOWS || (PLATFORM_CPU_ARM_FAMILY && !PLATFORM_WINDOWS_ARM64EC) )
+				{
+					InOutEditState.Kill(TEXT("Platform does not support changing gamepad input API"));
+				}
+
+				PRAGMA_DISABLE_DEPRECATION_WARNINGS
+				if (!GetDefault<UInputSettings>()->bEnablePreferredInputAPIPreferences)
+				{
+					InOutEditState.Kill(TEXT("Project does not have bEnablePreferredInputAPIPreferences enabled."));
+				}
+				PRAGMA_ENABLE_DEPRECATION_WARNINGS
+			});
+
+			Setting->AddEditCondition(WhenPlatformSupportsChangingGamepadAPI);
+
+			Setting->AddEnumOption(ELyraGamepadInputAPIOption::Legacy, LOCTEXT("GamepadAPI_Option_Legacy", "XInput + DualShock"));
+			Setting->AddEnumOption(ELyraGamepadInputAPIOption::Modern, LOCTEXT("GamepadAPI_Option_Modern", "Game Input"));
+
+			GamepadInputAPI->AddSetting(Setting);
+		}
 	}
 
 	return Screen;

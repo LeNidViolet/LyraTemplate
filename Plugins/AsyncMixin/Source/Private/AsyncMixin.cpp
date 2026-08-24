@@ -130,7 +130,7 @@ FAsyncMixin::FLoadingState::FLoadingState(FAsyncMixin& InOwner)
 FAsyncMixin::FLoadingState::~FLoadingState()
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_FAsyncMixin_FLoadingState_DestroyThisMemoryDelegate);
-	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] Destroy LoadingState (Done)"), this);
+	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] Destroy LoadingState (Done)"), this);
 
 	// If we get destroyed, need to cancel whatever we're doing and cancel any
 	// pending destruction - as we're already on the way out.
@@ -142,7 +142,7 @@ void FAsyncMixin::FLoadingState::CancelOnly(bool bDestroying)
 {
 	if (!bDestroying)
 	{
-		UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] Cancel"), this);
+		UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] Cancel"), this);
 	}
 
 	CancelStartTimer();
@@ -174,7 +174,7 @@ void FAsyncMixin::FLoadingState::CancelDestroyThisMemory(bool bDestroying)
 	{
 		if (!bDestroying)
 		{
-			UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] Destroy LoadingState (Canceled)"), this);
+			UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] Destroy LoadingState (Canceled)"), this);
 		}
 
 		FTSTicker::GetCoreTicker().RemoveTicker(DestroyMemoryDelegate);
@@ -187,7 +187,7 @@ void FAsyncMixin::FLoadingState::RequestDestroyThisMemory()
 	// If we're already pending to destroy this memory, just ignore.
 	if (!IsPendingDestroy())
 	{
-		UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] Destroy LoadingState (Requested)"), this);
+		UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] Destroy LoadingState (Requested)"), this);
 
 		DestroyMemoryDelegate = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float DeltaTime) {
 			// Remove any memory we were using.
@@ -208,7 +208,7 @@ void FAsyncMixin::FLoadingState::CancelStartTimer()
 
 void FAsyncMixin::FLoadingState::Start()
 {
-	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] Start (Current Progress %d/%d)"), this, CurrentAsyncStep + 1, AsyncSteps.Num());
+	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] Start (Current Progress %d/%d)"), this, CurrentAsyncStep + 1, AsyncSteps.Num());
 
 	// Cancel any pending kickoff load requests.
 	CancelStartTimer();
@@ -226,7 +226,7 @@ void FAsyncMixin::FLoadingState::Start()
 
 void FAsyncMixin::FLoadingState::AsyncLoad(FSoftObjectPath SoftObjectPath, const FSimpleDelegate& DelegateToCall)
 {
-	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] AsyncLoad '%s'"), this, *SoftObjectPath.ToString());
+	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] AsyncLoad '%s'"), this, *SoftObjectPath.ToString());
 
 	AsyncSteps.Add(
 		MakeUnique<FAsyncStep>(
@@ -242,7 +242,7 @@ void FAsyncMixin::FLoadingState::AsyncLoad(const TArray<FSoftObjectPath>& SoftOb
 {
 	{
 		const FString& Paths = FString::JoinBy(SoftObjectPaths, TEXT(", "), [](const FSoftObjectPath& SoftObjectPath) { return FString::Printf(TEXT("'%s'"), *SoftObjectPath.ToString()); });
-		UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] AsyncLoad [%s]"), this, *Paths);
+		UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] AsyncLoad [%s]"), this, *Paths);
 	}
 
 	AsyncSteps.Add(
@@ -260,7 +260,7 @@ void FAsyncMixin::FLoadingState::AsyncPreloadPrimaryAssetsAndBundles(const TArra
 	{		
 		const FString& Assets = FString::JoinBy(AssetIds, TEXT(", "), [](const FPrimaryAssetId& AssetId) { return AssetId.ToString(); });
 		const FString& Bundles = FString::JoinBy(LoadBundles, TEXT(", "), [](const FName& LoadBundle) { return LoadBundle.ToString(); });
-		UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X]  AsyncPreload Assets [%s], Bundles[%s]"), this, *Assets, *Bundles);
+		UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX]  AsyncPreload Assets [%s], Bundles[%s]"), this, *Assets, *Bundles);
 	}
 
 	TSharedPtr<FStreamableHandle> StreamingHandle;
@@ -280,7 +280,7 @@ void FAsyncMixin::FLoadingState::AsyncPreloadPrimaryAssetsAndBundles(const TArra
 
 void FAsyncMixin::FLoadingState::AsyncCondition(TSharedRef<FAsyncCondition> Condition, const FSimpleDelegate& DelegateToCall)
 {
-	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] AsyncCondition '0x%X'"), this, &Condition.Get());
+	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] AsyncCondition '0x%llX'"), this, &Condition.Get());
 
 	AsyncSteps.Add(MakeUnique<FAsyncStep>(DelegateToCall, Condition));
 
@@ -289,7 +289,7 @@ void FAsyncMixin::FLoadingState::AsyncCondition(TSharedRef<FAsyncCondition> Cond
 
 void FAsyncMixin::FLoadingState::AsyncEvent(const FSimpleDelegate& DelegateToCall)
 {
-	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] AsyncEvent"), this);
+	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] AsyncEvent"), this);
 
 	AsyncSteps.Add(MakeUnique<FAsyncStep>(DelegateToCall));
 
@@ -351,7 +351,7 @@ void FAsyncMixin::FLoadingState::TryCompleteAsyncLoading()
 		return;
 	}
 
-	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] TryCompleteAsyncLoading - (Current Progress %d/%d)"), this, CurrentAsyncStep + 1, AsyncSteps.Num());
+	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] TryCompleteAsyncLoading - (Current Progress %d/%d)"), this, CurrentAsyncStep + 1, AsyncSteps.Num());
 
 	while (CurrentAsyncStep < AsyncSteps.Num())
 	{
@@ -360,20 +360,20 @@ void FAsyncMixin::FLoadingState::TryCompleteAsyncLoading()
 		{
 			if (!Step->IsCompleteDelegateBound())
 			{
-				UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] Step %d - Still Loading (Listening)"), this, CurrentAsyncStep + 1);
+				UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] Step %d - Still Loading (Listening)"), this, CurrentAsyncStep + 1);
 				const bool bBound = Step->BindCompleteDelegate(FSimpleDelegate::CreateSP(this, &FLoadingState::TryCompleteAsyncLoading));
 				ensureMsgf(bBound, TEXT("This is not intended to return false.  We're checking if it's loaded above, this should definitely return true."));
 			}
 			else
 			{
-				UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] Step %d - Still Loading (Waiting)"), this, CurrentAsyncStep + 1);
+				UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] Step %d - Still Loading (Waiting)"), this, CurrentAsyncStep + 1);
 			}
 
 			break;
 		}
 		else
 		{
-			UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] Step %d - Completed (Calling User)"), this, CurrentAsyncStep + 1);
+			UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] Step %d - Completed (Calling User)"), this, CurrentAsyncStep + 1);
 
 			// Always advance the CurrentAsyncStep, before calling the user callback, it's possible they might
 			// add new work, and try and start again, so we need to be ready for the next bit.
@@ -396,7 +396,7 @@ void FAsyncMixin::FLoadingState::TryCompleteAsyncLoading()
 
 void FAsyncMixin::FLoadingState::CompleteAsyncLoading()
 {
-	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] CompleteAsyncLoading"), this);
+	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] CompleteAsyncLoading"), this);
 
 	// Mark that we've completed loading.
 	if (bHasStarted)
@@ -554,7 +554,7 @@ bool FAsyncCondition::BindCompleteDelegate(const FSimpleDelegate& NewDelegate)
 
 	if (!RepeatHandle.IsValid())
 	{
-		RepeatHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateSP(this, &FAsyncCondition::TryToContinue), 0.16);
+		RepeatHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateSP(this, &FAsyncCondition::TryToContinue), 0.16f);
 	}
 
 	return true;
@@ -564,7 +564,7 @@ bool FAsyncCondition::TryToContinue(float)
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_FAsyncCondition_TryToContinue);
 
-	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%X] AsyncCondition::TryToContinue"), this);
+	UE_LOG(LogAsyncMixin, Verbose, TEXT("[0x%llX] AsyncCondition::TryToContinue"), this);
 
 	if (UserCondition.IsBound())
 	{

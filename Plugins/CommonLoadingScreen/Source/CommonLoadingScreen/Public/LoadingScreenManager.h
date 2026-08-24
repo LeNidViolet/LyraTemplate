@@ -16,6 +16,7 @@ class FSubsystemCollectionBase;
 class IInputProcessor;
 class ILoadingProcessInterface;
 class SWidget;
+class ULocalPlayer;
 class UObject;
 class UWorld;
 struct FFrame;
@@ -107,6 +108,7 @@ private:
 
 	/** A reference to the loading screen widget we are displaying (if any) */
 	TSharedPtr<SWidget> LoadingScreenWidget;
+	TMap<TWeakObjectPtr<ULocalPlayer>, TSharedPtr<SWidget>> PlayersLoadingScreenWidgets;
 
 	/** Input processor to eat all input while the loading screen is shown */
 	TSharedPtr<IInputProcessor> InputPreProcessor;

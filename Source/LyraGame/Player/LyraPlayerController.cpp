@@ -61,7 +61,6 @@ void ALyraPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	#if WITH_RPC_REGISTRY
-	FHttpServerModule::Get().StartAllListeners();
 	int32 RpcPort = 0;
 	if (FParse::Value(FCommandLine::Get(), TEXT("rpcport="), RpcPort))
 	{

@@ -77,8 +77,8 @@ void ULyraJoystickWidget::HandleTouchDelta(const FGeometry& InGeometry, const FP
 {
 	const FVector2D& ScreenSpacePos = InGestureEvent.GetScreenSpacePosition();
 	
-	// The center of the geo locally is just its size
-	FVector2D LocalStickCenter = InGeometry.GetAbsoluteSize();
+	// The center of the geo locally is just half its size
+	FVector2D LocalStickCenter = InGeometry.GetAbsoluteSize() * 0.5f;
 
 	FVector2D ScreenSpaceStickCenter = InGeometry.LocalToAbsolute(LocalStickCenter);
 	// Get the offset from the origin

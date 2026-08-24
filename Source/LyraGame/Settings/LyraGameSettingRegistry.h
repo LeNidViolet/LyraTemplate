@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Containers/Ticker.h"
 #include "DataSource/GameSettingDataSourceDynamic.h" // IWYU pragma: keep
 #include "GameSettingRegistry.h"
 #include "Settings/LyraSettingsLocal.h" // IWYU pragma: keep
@@ -61,6 +62,8 @@ protected:
 	UGameSettingCollection* InitializeMouseAndKeyboardSettings(ULyraLocalPlayer* InLocalPlayer);
 	UGameSettingCollection* InitializeGamepadSettings(ULyraLocalPlayer* InLocalPlayer);
 
+	void AddDLCPage(UGameSettingCollection* Screen, ULyraLocalPlayer* InLocalPlayer);
+
 	UPROPERTY()
 	TObjectPtr<UGameSettingCollection> VideoSettings;
 
@@ -75,4 +78,6 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UGameSettingCollection> GamepadSettings;
+
+	FTSTicker::FDelegateHandle DLCTickHandle;
 };

@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+#include "CustomSettings/LyraSettingAction_HDRCalibrationEditor.h"
 #include "CustomSettings/LyraSettingAction_SafeZoneEditor.h"
+#include "CustomSettings/LyraSettingValueDiscrete_Display.h"
 #include "CustomSettings/LyraSettingValueDiscrete_MobileFPSType.h"
 #include "CustomSettings/LyraSettingValueDiscrete_OverallQuality.h"
 #include "CustomSettings/LyraSettingValueDiscrete_Resolution.h"
@@ -11,19 +13,31 @@
 #include "Framework/Application/SlateApplication.h"
 #include "GameSettingCollection.h"
 #include "GameSettingValueDiscreteDynamic.h"
+#include "HDRHelper.h"
 #include "LyraGameSettingRegistry.h"
 #include "LyraSettingsLocal.h"
 #include "LyraSettingsShared.h"
 #include "NativeGameplayTags.h"
 #include "Performance/LyraPerformanceSettings.h"
 #include "Player/LyraLocalPlayer.h"
+#include "RHIGlobals.h"
+
+#if PLATFORM_WINDOWS
+#include "Engine/GameInstance.h"
+#include "Engine/GameViewportClient.h"
+#define SUPPORTS_DISPLAY_SETTING 1
+#else
+#define SUPPORTS_DISPLAY_SETTING 0
+#endif
 
 #define LOCTEXT_NAMESPACE "Lyra"
 
 UE_DEFINE_GAMEPLAY_TAG_STATIC(GameSettings_Action_EditSafeZone, "GameSettings.Action.EditSafeZone");
 UE_DEFINE_GAMEPLAY_TAG_STATIC(GameSettings_Action_EditBrightness, "GameSettings.Action.EditBrightness");
+UE_DEFINE_GAMEPLAY_TAG_STATIC(GameSettings_Action_CalibrateHDR, "GameSettings.Action.CalibrateHDR");
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Platform_Trait_SupportsWindowedMode, "Platform.Trait.SupportsWindowedMode");
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Platform_Trait_NeedsBrightnessAdjustment, "Platform.Trait.NeedsBrightnessAdjustment");
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Platform_Trait_SupportsCustomDynamicResolution, "Platform.Trait.SupportsCustomDynamicResolution");
 
 //////////////////////////////////////////////////////////////////////
 
@@ -46,13 +60,44 @@ public:
 	virtual void GatherEditState(const ULocalPlayer * InLocalPlayer, FGameSettingEditableState & InOutEditState) const override
 	{
 		const ELyraFramePacingMode ActualMode = ULyraPlatformSpecificRenderingSettings::Get()->FramePacingMode;
-		
+
 		const bool bMatches = (ActualMode == DesiredMode);
 		const bool bMatchesAreBad = (MatchMode == EFramePacingEditCondition::DisableIf);
 
 		if (bMatches == bMatchesAreBad)
 		{
 			InOutEditState.Kill(FString::Printf(TEXT("Frame pacing mode %d didn't match requirement %d"), (int32)ActualMode, (int32)DesiredMode));
+		}
+	}
+private:
+	ELyraFramePacingMode DesiredMode;
+	EFramePacingEditCondition MatchMode;
+};
+
+//////////////////////////////////////////////////////////////////////
+
+// Checks the platform-specific value for FramePacingMode
+class FGameSettingEditCondition_DynamicResolution : public FGameSettingEditCondition
+{
+public:
+	FGameSettingEditCondition_DynamicResolution(ELyraFramePacingMode InDesiredMode, EFramePacingEditCondition InMatchMode = EFramePacingEditCondition::EnableIf)
+		: DesiredMode(InDesiredMode)
+		, MatchMode(InMatchMode)
+	{
+	}
+
+	virtual void GatherEditState(const ULocalPlayer* InLocalPlayer, FGameSettingEditableState& InOutEditState) const override
+	{
+		const ELyraFramePacingMode ActualMode = ULyraPlatformSpecificRenderingSettings::Get()->FramePacingMode;
+
+		const bool bMatches = (ActualMode == DesiredMode);
+		const bool bMatchesAreBad = (MatchMode == EFramePacingEditCondition::DisableIf);
+
+		const bool bRHISupportsDynamicResolution = GRHISupportsDynamicResolution;
+
+		if ((bMatches == bMatchesAreBad) || (bRHISupportsDynamicResolution == false))
+		{
+			InOutEditState.Kill(FString::Printf(TEXT("Dynamic resolution not supported on this Platform/RHI")));
 		}
 	}
 private:
@@ -100,6 +145,13 @@ UGameSettingCollection* ULyraGameSettingRegistry::InitializeVideoSettings(ULyraL
 	Screen->Initialize(InLocalPlayer);
 
 	UGameSettingValueDiscreteDynamic_Enum* WindowModeSetting = nullptr;
+#if SUPPORTS_DISPLAY_SETTING
+	ULyraSettingValueDiscrete_Display* DisplaySetting = nullptr;
+#endif
+	ULyraSettingValueDiscrete_Resolution* ResolutionSetting = nullptr;
+#if PLATFORM_USES_DYNAMIC_HDR_SETTING
+	UGameSettingValueDiscreteDynamic_Bool* AllowHDRSetting = nullptr;
+#endif
 	UGameSetting* MobileFPSType = nullptr;
 
 	// Display
@@ -131,6 +183,18 @@ UGameSettingCollection* ULyraGameSettingRegistry::InitializeVideoSettings(ULyraL
 		}
 		//----------------------------------------------------------------------------------
 		{
+#if SUPPORTS_DISPLAY_SETTING
+			ULyraSettingValueDiscrete_Display* Setting = NewObject<ULyraSettingValueDiscrete_Display>();
+			Setting->SetDevName(TEXT("Display"));
+			Setting->SetDisplayName(LOCTEXT("Display_Name", "Display"));
+			Setting->SetDescriptionRichText(LOCTEXT("Display_Description", "The display on which the window should be displayed."));
+
+			Display->AddSetting(Setting);
+			DisplaySetting = Setting;
+#endif
+		}
+		//----------------------------------------------------------------------------------
+		{
 			ULyraSettingValueDiscrete_Resolution* Setting = NewObject<ULyraSettingValueDiscrete_Resolution>();
 			Setting->SetDevName(TEXT("Resolution"));
 			Setting->SetDisplayName(LOCTEXT("Resolution_Name", "Resolution"));
@@ -146,13 +210,72 @@ UGameSettingCollection* ULyraGameSettingRegistry::InitializeVideoSettings(ULyraL
 				}
 			}));
 
+#if SUPPORTS_DISPLAY_SETTING
+			Setting->AddEditDependency(DisplaySetting);
+#endif
+
 			Display->AddSetting(Setting);
+			ResolutionSetting = Setting;
 		}
 		//----------------------------------------------------------------------------------
 		{
 			AddPerformanceStatPage(Display, InLocalPlayer);
 		}
 		//----------------------------------------------------------------------------------
+
+#if PLATFORM_WINDOWS
+		// On Windows, users can change window mode (and indirectly resolution) by pressing ALT+Enter.
+		// Register a delegate to respond to any change so that we correctly refresh the UI.
+		if (UGameInstance* GameInstance = InLocalPlayer->GetGameInstance())
+		{
+			if (UGameViewportClient* ViewportClient = GameInstance->GetGameViewportClient())
+			{
+				ViewportClient->OnWindowDisplayChanged().AddWeakLambda(Display,
+					[DisplaySetting]()
+					{
+						if (DisplaySetting)
+						{
+							DisplaySetting->RefreshEditableState();
+						}
+					});
+				ViewportClient->OnToggleFullscreen().AddWeakLambda(Display,
+					[WindowModeSetting, DisplaySetting, ResolutionSetting](bool bIsFullscreen)
+					{
+						if (WindowModeSetting)
+						{
+							WindowModeSetting->RefreshEditableState();
+						}
+						if (DisplaySetting)
+						{
+							DisplaySetting->RefreshEditableState();
+						}
+						if (ResolutionSetting)
+						{
+							ResolutionSetting->RefreshEditableState();
+						}
+					});
+			}
+			if (ULyraSettingsLocal* GameUserSettings = InLocalPlayer->GetLocalSettings()->Get())
+			{
+				GameUserSettings->OnGameUserSettingsVideoRevert.AddWeakLambda(Display,
+					[WindowModeSetting, DisplaySetting, ResolutionSetting]()
+					{
+						if (WindowModeSetting)
+						{
+							WindowModeSetting->RefreshEditableState();
+						}
+						if (DisplaySetting)
+						{
+							DisplaySetting->RefreshEditableState();
+						}
+						if (ResolutionSetting)
+						{
+							ResolutionSetting->RefreshEditableState();
+						}
+					});
+			}
+		}
+#endif
 	}
 
 	// Graphics
@@ -169,7 +292,7 @@ UGameSettingCollection* ULyraGameSettingRegistry::InitializeVideoSettings(ULyraL
 			Setting->SetDevName(TEXT("ColorBlindMode"));
 			Setting->SetDisplayName(LOCTEXT("ColorBlindMode_Name", "Color Blind Mode"));
 			Setting->SetDescriptionRichText(LOCTEXT("ColorBlindMode_Description", "Using the provided images, test out the different color blind modes to find a color correction that works best for you."));
-			
+
 			Setting->SetDynamicGetter(GET_SHARED_SETTINGS_FUNCTION_PATH(GetColorBlindMode));
 			Setting->SetDynamicSetter(GET_SHARED_SETTINGS_FUNCTION_PATH(SetColorBlindMode));
 			Setting->SetDefaultValue(GetDefault<ULyraSettingsShared>()->GetColorBlindMode());
@@ -221,6 +344,87 @@ UGameSettingCollection* ULyraGameSettingRegistry::InitializeVideoSettings(ULyraL
 
 			Graphics->AddSetting(Setting);
 		}
+		//----------------------------------------------------------------------------------
+#if PLATFORM_USES_DYNAMIC_HDR_SETTING
+		{
+			UGameSettingValueDiscreteDynamic_Bool* Setting = NewObject<UGameSettingValueDiscreteDynamic_Bool>();
+			Setting->SetDevName(TEXT("AllowHDR"));
+			Setting->SetDisplayName(LOCTEXT("AllowHDR_Name", "Allow HDR"));
+			Setting->SetDescriptionRichText(LOCTEXT("AllowHDR_Description", "Allow HDR if the display is capable of HDR output."));
+
+			Setting->SetDynamicGetter(GET_LOCAL_SETTINGS_FUNCTION_PATH(IsHDREnabled));
+			Setting->SetDynamicSetter(GET_LOCAL_SETTINGS_FUNCTION_PATH(SetHDREnabled));
+			Setting->SetDefaultValue(false);
+
+			Setting->AddEditCondition(FWhenPlayingAsPrimaryPlayer::Get());
+
+			AllowHDRSetting = Setting;
+
+			Graphics->AddSetting(Setting);
+		}
+#endif
+		//----------------------------------------------------------------------------------
+#if PLATFORM_USES_DYNAMIC_HDR_SETTING
+		{
+			UGameSettingValueDiscreteDynamic_Bool* Setting = NewObject<UGameSettingValueDiscreteDynamic_Bool>();
+			Setting->SetDevName(TEXT("HDRUseCalibration"));
+			Setting->SetDisplayName(LOCTEXT("HDRUseCalibration_Name", "HDR Use Calibration"));
+			Setting->SetDescriptionRichText(LOCTEXT("HDRUseCalibration_Description", "Use calibration for HDR, which can be more accurate than OS information."));
+
+			Setting->SetDynamicGetter(GET_LOCAL_SETTINGS_FUNCTION_PATH(IsHDRCalibrationUsed));
+			Setting->SetDynamicSetter(GET_LOCAL_SETTINGS_FUNCTION_PATH(SetHDRCalibrationUsed));
+			Setting->SetDefaultValue(false);
+
+			Setting->AddEditCondition(FWhenPlayingAsPrimaryPlayer::Get());
+
+			Graphics->AddSetting(Setting);
+		}
+#endif
+		//----------------------------------------------------------------------------------
+#if PLATFORM_USES_DYNAMIC_HDR_SETTING
+		{
+			ULyraSettingAction_HDRCalibrationEditor* Setting = NewObject<ULyraSettingAction_HDRCalibrationEditor>();
+			Setting->SetDevName(TEXT("HDRCalibrationEditor"));
+			Setting->SetDisplayName(LOCTEXT("HDRCalibrationEditor_Name", "HDR Calibration"));
+			Setting->SetDescriptionRichText(LOCTEXT("HDRCalibrationEditor_Description", "Calibrate HDR for the display."));
+			Setting->SetActionText(LOCTEXT("HDRCalibration_Action", "Calibrate HDR Display"));
+			Setting->SetNamedAction(GameSettings_Action_CalibrateHDR);
+
+			Setting->AddEditDependency(AllowHDRSetting);
+
+			Setting->AddEditCondition(FWhenPlayingAsPrimaryPlayer::Get());
+			Setting->AddEditCondition(MakeShared<FWhenCondition>(
+				[](const ULocalPlayer*, FGameSettingEditableState& InOutEditState)
+				{
+					// TODO: Query HDR status of the game viewport and call RefreshEditableState on this setting as necessary.
+					if (!IsHDREnabled())
+					{
+						InOutEditState.Disable(LOCTEXT("HDRNeededForCalibration", "Calibration needs HDR display output to be enabled and active."));
+					}
+				}));
+
+			Graphics->AddSetting(Setting);
+		}
+#endif
+		//----------------------------------------------------------------------------------
+#if !PLATFORM_PROVIDES_HDR_PAPER_WHITE && (PLATFORM_USES_FIXED_HDR_SETTING || PLATFORM_USES_DYNAMIC_HDR_SETTING)
+		{
+			UGameSettingValueScalarDynamic* Setting = NewObject<UGameSettingValueScalarDynamic>();
+			Setting->SetDevName(TEXT("HDRPaperWhite"));
+			Setting->SetDisplayName(LOCTEXT("HDRPaperWhite_Name", "HDR Paper White"));
+			Setting->SetDescriptionRichText(LOCTEXT("HDRPaperWhite_Description", "Adjusts the HDR paper white value. 203 nits is ideal for dim environments. You may want to increase if your environment is brightly lit."));
+
+			Setting->SetDynamicGetter(GET_LOCAL_SETTINGS_FUNCTION_PATH(GetHDRPaperWhiteNits));
+			Setting->SetDynamicSetter(GET_LOCAL_SETTINGS_FUNCTION_PATH(SetHDRPaperWhiteNits));
+			Setting->SetDefaultValue(203.);
+			Setting->SetDisplayFormat(UGameSettingValueScalarDynamic::Raw);
+			Setting->SetSourceRangeAndStep(TRange<double>(80., 480.), 1.);
+
+			Setting->AddEditCondition(FWhenPlayingAsPrimaryPlayer::Get());
+
+			Graphics->AddSetting(Setting);
+		}
+#endif
 		//----------------------------------------------------------------------------------
 		{
 			ULyraSettingAction_SafeZoneEditor* Setting = NewObject<ULyraSettingAction_SafeZoneEditor>();
@@ -555,7 +759,7 @@ UGameSettingCollection* ULyraGameSettingRegistry::InitializeVideoSettings(ULyraL
 			UGameSettingValueDiscreteDynamic_Number* Setting = NewObject<UGameSettingValueDiscreteDynamic_Number>();
 			Setting->SetDevName(TEXT("PostProcessingQuality"));
 			Setting->SetDisplayName(LOCTEXT("PostProcessingQuality_Name", "Post Processing"));
-			Setting->SetDescriptionRichText(LOCTEXT("PostProcessingQuality_Description", "Post Processing effects include Motion Blur, Depth of Field and Bloom. Increasing this setting improves the quality of post process effects, but can reduce performance."));  
+			Setting->SetDescriptionRichText(LOCTEXT("PostProcessingQuality_Description", "Post Processing effects include Motion Blur, Depth of Field and Bloom. Increasing this setting improves the quality of post process effects, but can reduce performance."));
 
 			Setting->SetDynamicGetter(GET_LOCAL_SETTINGS_FUNCTION_PATH(GetPostProcessingQuality));
 			Setting->SetDynamicSetter(GET_LOCAL_SETTINGS_FUNCTION_PATH(SetPostProcessingQuality));
@@ -610,6 +814,16 @@ UGameSettingCollection* ULyraGameSettingRegistry::InitializeVideoSettings(ULyraL
 	}
 
 	return Screen;
+}
+
+void AddDynamicResolutionOptions(UGameSettingValueDiscreteDynamic_Number* Setting)
+{
+	const FText FPSFormat = LOCTEXT("FPSFormat", "{0} FPS");
+	for (int32 Rate : GetDefault<ULyraPerformanceSettings>()->DesktopFrameRateLimits)
+	{
+		Setting->AddOption((float)Rate, FText::Format(FPSFormat, Rate));
+	}
+	Setting->AddOption(0.0f, LOCTEXT("OFF", "OFF"));
 }
 
 void AddFrameRateOptions(UGameSettingValueDiscreteDynamic_Number* Setting)
@@ -687,6 +901,23 @@ void ULyraGameSettingRegistry::InitializeVideoSettings_FrameRates(UGameSettingCo
 		Setting->AddEditCondition(MakeShared<FGameSettingEditCondition_FramePacingMode>(ELyraFramePacingMode::DesktopStyle));
 
 		AddFrameRateOptions(Setting);
+
+		Screen->AddSetting(Setting);
+	}
+
+	{
+		UGameSettingValueDiscreteDynamic_Number* Setting = NewObject<UGameSettingValueDiscreteDynamic_Number>();
+		Setting->SetDevName(TEXT("DynamicResolution"));
+		Setting->SetDisplayName(LOCTEXT("DynamicResolution_Name", "Dynamic Resolution"));
+		Setting->SetDescriptionRichText(LOCTEXT("DynamicResolution_Description", "Enabling Dynamic Resolution will allow internal rendering resolution to dynamically scale while trying to keep the selected target frame rate."));
+
+		Setting->SetDynamicGetter(GET_LOCAL_SETTINGS_FUNCTION_PATH(GetDynamicResolutionFrameRateTarget));
+		Setting->SetDynamicSetter(GET_LOCAL_SETTINGS_FUNCTION_PATH(SetDynamicResolutionFrameRateTarget));
+		Setting->SetDefaultValue(0.0f);
+		Setting->AddEditCondition(MakeShared<FGameSettingEditCondition_DynamicResolution>(ELyraFramePacingMode::DesktopStyle));
+		Setting->AddEditCondition(FWhenPlatformHasTrait::KillIfMissing(TAG_Platform_Trait_SupportsCustomDynamicResolution, TEXT("Platform does not support dynamic resolution settings.")));
+
+		AddDynamicResolutionOptions(Setting);
 
 		Screen->AddSetting(Setting);
 	}

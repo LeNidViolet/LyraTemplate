@@ -125,6 +125,35 @@ void ULyraSettingsShared::SetColorBlindStrength(int32 InColorBlindStrength)
 	}
 }
 
+void ULyraSettingsShared::SetGamepadInputAPIOption(const ELyraGamepadInputAPIOption NewValue)
+{
+	const bool bWasValueChanged = ChangeValueAndDirty(GamepadInputAPIOptions, NewValue);
+
+	// We dont have any other additional work to do if the value wasn't changed.
+	if (!bWasValueChanged)
+	{
+		return;
+	}
+
+	// A comma-separated list of preferred gamepad APIs
+	FString GamepadAPIOptions = TEXT("");
+
+	switch (NewValue)
+	{
+	case ELyraGamepadInputAPIOption::Legacy:
+		GamepadAPIOptions = TEXT("XInput,WinDualShock");
+		break;
+	case ELyraGamepadInputAPIOption::Modern:
+		GamepadAPIOptions = TEXT("GameInput");
+		break;
+	default:
+		checkNoEntry();
+		break;
+	}
+
+	FGenericPlatformMisc::SetPreferredInputDevices(*GamepadAPIOptions);
+}
+
 int32 ULyraSettingsShared::GetColorBlindStrength() const
 {
 	return ColorBlindStrength;

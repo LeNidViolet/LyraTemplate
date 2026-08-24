@@ -24,7 +24,7 @@ void UGameFeatureAction_AddWidgets::OnGameFeatureDeactivating(FGameFeatureDeacti
 	Super::OnGameFeatureDeactivating(Context);
 
 	FPerContextData* ActiveData = ContextData.Find(Context);
-	if ensure(ActiveData)
+	if (ensure(ActiveData))
 	{
 		Reset(*ActiveData);
 	}

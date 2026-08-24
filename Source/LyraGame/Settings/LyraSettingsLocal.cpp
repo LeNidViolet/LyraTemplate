@@ -79,7 +79,7 @@ static TAutoConsoleVariable<int32> CVarDeviceProfileDrivenMobileDefaultFrameRate
 
 static TAutoConsoleVariable<int32> CVarDeviceProfileDrivenMobileMaxFrameRate(
 	TEXT("Lyra.DeviceProfile.Mobile.MaxFrameRate"),
-	30,
+	120,
 	TEXT("Max FPS when being driven by device profile"),
 	ECVF_Default | ECVF_Preview);
 
@@ -483,6 +483,11 @@ float ULyraSettingsLocal::GetEffectiveFrameRateLimit()
 		{
 			EffectiveFrameRateLimit = CombineFrameRateLimits(EffectiveFrameRateLimit, FrameRateLimit_WhenBackgrounded);
 		}
+
+		if (GetDynamicResolutionFrameRateTarget() != 0.0f)
+		{
+			EffectiveFrameRateLimit = CombineFrameRateLimits(EffectiveFrameRateLimit, GetDynamicResolutionFrameRateTarget());
+		}
 	}
 
  	return EffectiveFrameRateLimit;
@@ -716,6 +721,19 @@ void ULyraSettingsLocal::UpdateEffectiveFrameRateLimit()
 	if (!IsRunningDedicatedServer())
 	{
 		SetFrameRateLimitCVar(GetEffectiveFrameRateLimit());
+	}
+}
+
+float ULyraSettingsLocal::GetDynamicResolutionFrameRateTarget() const
+{
+	return DynamicResolutionFrameTarget;
+}
+
+void ULyraSettingsLocal::SetDynamicResolutionFrameRateTarget(float NewDynamicResolutionFPS)
+{
+	if (!IsRunningDedicatedServer())
+	{
+		DynamicResolutionFrameTarget = NewDynamicResolutionFPS;
 	}
 }
 
@@ -1273,6 +1291,7 @@ void ULyraSettingsLocal::ApplyNonResolutionSettings()
 	{
 		ApplyDisplayGamma();
 		ApplySafeZoneScale();
+		SetMobileFPSMode(DesiredMobileFrameRateLimit);
 		UpdateGameModeDeviceProfileAndFps();
 	}
 
@@ -1458,10 +1477,12 @@ void ULyraSettingsLocal::OnAppActivationStateChanged(bool bIsActive)
 
 void ULyraSettingsLocal::UpdateGameModeDeviceProfileAndFps()
 {
+	bool bApplyDeviceProfile = true;
+
 #if WITH_EDITOR
 	if (GIsEditor && !CVarApplyDeviceProfilesInPIE.GetValueOnGameThread())
 	{
-		return;
+		bApplyDeviceProfile = false;
 	}
 #endif
 
@@ -1548,11 +1569,11 @@ void ULyraSettingsLocal::UpdateGameModeDeviceProfileAndFps()
 		}
 	}
 
-	UE_LOG(LogConsoleResponse, Log, TEXT("UpdateGameModeDeviceProfileAndFps MaxRefreshRate=%d, ExperienceSuffix='%s', UserPicked='%s'->'%s', PlatformBase='%s', AppliedActual='%s'"), 
+	UE_LOG(LogConsoleResponse, Log, TEXT("UpdateGameModeDeviceProfileAndFps MaxRefreshRate=%d, ExperienceSuffix='%s', UserPicked='%s'->'%s', PlatformBase='%s', AppliedActual='%s'"),
 		PlatformMaxRefreshRate, *ExperienceSuffix, *UserChosenDeviceProfileSuffix, *EffectiveUserSuffix, *BasePlatformName, *ActualProfileToApply);
 
 	// Apply the device profile if it's different to what we currently have
-	if (ActualProfileToApply != CurrentAppliedDeviceProfileOverrideSuffix)
+	if (ActualProfileToApply != CurrentAppliedDeviceProfileOverrideSuffix && bApplyDeviceProfile)
 	{
 		if (Manager.GetActiveDeviceProfileName() != ActualProfileToApply)
 		{
@@ -1648,8 +1669,11 @@ void ULyraSettingsLocal::UpdateDesktopFramePacing()
 	// So this function is only doing 'second order' effects of desktop frame pacing preferences
 
 	const float TargetFPS = GetEffectiveFrameRateLimit();
-	const float ClampedFPS = (TargetFPS <= 0.0f) ? 60.0f : FMath::Clamp(TargetFPS, 30.0f, 60.0f);
+	const float ClampedFPS = (TargetFPS <= 0.0f) ? 60 : TargetFPS;
 	UpdateDynamicResFrameTime(ClampedFPS);
+
+	SetDynamicResolutionEnabled((GetDynamicResolutionFrameRateTarget() == 0.0f) ? false : true);
+	GEngine->SetDynamicResolutionUserSetting(IsDynamicResolutionEnabled());
 }
 
 void ULyraSettingsLocal::UpdateMobileFramePacing()

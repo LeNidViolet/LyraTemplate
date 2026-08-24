@@ -563,8 +563,6 @@ void ULyraGameplayAbility_RangedWeapon::StartRangedWeaponTargeting()
 	check(Controller);
 	ULyraWeaponStateComponent* WeaponStateComponent = Controller->FindComponentByClass<ULyraWeaponStateComponent>();
 
-	FScopedPredictionWindow ScopedPrediction(MyAbilityComponent, CurrentActivationInfo.GetActivationPredictionKey());
-
 	TArray<FHitResult> FoundHits;
 	PerformLocalTargeting(/*out*/ FoundHits);
 

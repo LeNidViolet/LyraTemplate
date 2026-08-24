@@ -201,7 +201,7 @@ void ULyraHotfixManager::StartHotfixProcess()
 	if (GIsEditor)
 	{
 		UE_LOG(LogHotfixManager, Display, TEXT("Hotfixing skipped in development mode."));
-		TriggerHotfixComplete(EHotfixResult::SuccessNoChange);
+		FinalizeHotfixProcess(EHotfixResult::SuccessNoChange);
 		return;
 	}
 

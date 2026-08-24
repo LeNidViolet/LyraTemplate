@@ -45,6 +45,20 @@ void UGameSettingDetailView::NativeConstruct()
 	Super::NativeConstruct();
 }
 
+void UGameSettingDetailView::HandleCurrentSettingChanged(UGameSetting* InSetting, EGameSettingChangeReason)
+{
+	if (RichText_Description)
+	{
+		RichText_Description->SetText(InSetting->GetDescriptionRichText());
+	}
+	if (RichText_DynamicDetails)
+	{
+		const FText DynamicDetails = InSetting->GetDynamicDetails();
+		RichText_DynamicDetails->SetText(DynamicDetails);
+		RichText_DynamicDetails->SetVisibility(DynamicDetails.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+	}
+}
+
 void UGameSettingDetailView::FillSettingDetails(UGameSetting* InSetting)
 {
 	// Ignore requests to show the same setting multiple times in a row.
@@ -53,7 +67,17 @@ void UGameSettingDetailView::FillSettingDetails(UGameSetting* InSetting)
 		return;
 	}
 
+	if (CurrentSetting)
+	{
+		CurrentSetting->OnSettingChangedEvent.RemoveAll(this);
+	}
+
 	CurrentSetting = InSetting;
+
+	if (CurrentSetting)
+	{
+		CurrentSetting->OnSettingChangedEvent.AddUObject(this, &ThisClass::HandleCurrentSettingChanged);
+	}
 
 	if (Text_SettingName)
 	{

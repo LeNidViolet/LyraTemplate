@@ -8,6 +8,8 @@
 
 #define UE_API GAMESETTINGS_API
 
+enum class EGameSettingChangeReason : uint8;
+
 class UCommonRichTextBlock;
 class UCommonTextBlock;
 class UGameSetting;
@@ -50,6 +52,9 @@ protected:
 	TObjectPtr<UGameSetting> CurrentSetting;
 
 	TSharedPtr<FStreamableHandle> StreamingHandle;
+
+private:
+	void HandleCurrentSettingChanged(UGameSetting* InSetting, EGameSettingChangeReason Reason);
 
 private:	// Bound Widgets
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))

@@ -519,20 +519,47 @@ void ULoadingScreenManager::ShowLoadingScreen()
 			LoadingScreenWidgetClass = Settings->LoadingScreenWidget.TryLoadClass<UUserWidget>();
 		}
 
+		UGameViewportClient* GameViewportClient = LocalGameInstance->GetGameViewportClient();
 
-		if (UUserWidget* UserWidget = UUserWidget::CreateWidgetInstance(*LocalGameInstance, LoadingScreenWidgetClass, NAME_None))
+
+		if (GameViewportClient->bEnablePlayersSplitRT)
 		{
-			LoadingScreenWidget = UserWidget->TakeWidget();
+			for (ULocalPlayer* Player : LocalGameInstance->GetLocalPlayers())
+			{
+				if (Player)
+				{
+					TSharedPtr<SWidget> PlayerWidget;
+
+					if (UUserWidget* UserWidget = UUserWidget::CreateWidgetInstance(*LocalGameInstance, LoadingScreenWidgetClass, NAME_None))
+					{
+						PlayerWidget = UserWidget->TakeWidget();
+					}
+					else
+					{
+						UE_LOG(LogLoadingScreen, Error, TEXT("Failed to load the loading screen widget %s, falling back to placeholder."), *Settings->LoadingScreenWidget.ToString());
+						PlayerWidget = SNew(SThrobber);
+					}
+
+					PlayersLoadingScreenWidgets.Add(Player, PlayerWidget);
+					GameViewportClient->AddViewportWidgetForPlayer(Player, PlayerWidget.ToSharedRef(), Settings->LoadingScreenZOrder);
+				}
+			}
 		}
 		else
 		{
-			UE_LOG(LogLoadingScreen, Error, TEXT("Failed to load the loading screen widget %s, falling back to placeholder."), *Settings->LoadingScreenWidget.ToString());
-			LoadingScreenWidget = SNew(SThrobber);
-		}
+			if (UUserWidget* UserWidget = UUserWidget::CreateWidgetInstance(*LocalGameInstance, LoadingScreenWidgetClass, NAME_None))
+			{
+				LoadingScreenWidget = UserWidget->TakeWidget();
+			}
+			else
+			{
+				UE_LOG(LogLoadingScreen, Error, TEXT("Failed to load the loading screen widget %s, falling back to placeholder."), *Settings->LoadingScreenWidget.ToString());
+				LoadingScreenWidget = SNew(SThrobber);
+			}
 
-		// Add to the viewport at a high ZOrder to make sure it is on top of most things
-		UGameViewportClient* GameViewportClient = LocalGameInstance->GetGameViewportClient();
-		GameViewportClient->AddViewportWidgetContent(LoadingScreenWidget.ToSharedRef(), Settings->LoadingScreenZOrder);
+			// Add to the viewport at a high ZOrder to make sure it is on top of most things
+			GameViewportClient->AddViewportWidgetContent(LoadingScreenWidget.ToSharedRef(), Settings->LoadingScreenZOrder);
+		}
 
 		ChangePerformanceSettings(/*bEnableLoadingScreen=*/ true);
 
@@ -587,13 +614,39 @@ void ULoadingScreenManager::HideLoadingScreen()
 void ULoadingScreenManager::RemoveWidgetFromViewport()
 {
 	UGameInstance* LocalGameInstance = GetGameInstance();
-	if (LoadingScreenWidget.IsValid())
+	bool bUseSplitRT = false;
+	UGameViewportClient* GameViewportClient = LocalGameInstance->GetGameViewportClient();
+
+	if (GameViewportClient && GameViewportClient->bEnablePlayersSplitRT)
 	{
-		if (UGameViewportClient* GameViewportClient = LocalGameInstance->GetGameViewportClient())
+		bUseSplitRT = true;
+	}
+
+	if (bUseSplitRT)
+	{
+		if (GameViewportClient)
 		{
-			GameViewportClient->RemoveViewportWidgetContent(LoadingScreenWidget.ToSharedRef());
+			for (auto& Pair : PlayersLoadingScreenWidgets)
+			{
+				if (Pair.Key.IsValid() && Pair.Value.IsValid())
+				{
+					GameViewportClient->RemoveViewportWidgetForPlayer(Pair.Key.Get(), Pair.Value.ToSharedRef());
+				}
+			}
 		}
-		LoadingScreenWidget.Reset();
+		PlayersLoadingScreenWidgets.Empty();
+	}
+	else
+	{
+		if (LoadingScreenWidget.IsValid())
+		{
+			if (GameViewportClient)
+			{
+				GameViewportClient->RemoveViewportWidgetContent(LoadingScreenWidget.ToSharedRef());
+			}
+			LoadingScreenWidget.Reset();
+		}
+
 	}
 }
 

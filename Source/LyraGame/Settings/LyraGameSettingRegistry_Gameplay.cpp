@@ -96,6 +96,17 @@ UGameSettingCollection* ULyraGameSettingRegistry::InitializeGameplaySettings(ULy
 		//----------------------------------------------------------------------------------
 	}
 
+	//----------------------------------------------------------------------------------
+	{
+		UGameSettingCollection* DLCSubsection = NewObject<UGameSettingCollection>();
+		DLCSubsection->SetDevName(TEXT("DownloadableContentCollection"));
+		DLCSubsection->SetDisplayName(LOCTEXT("DLCCollection_Name", "Downloadable Content"));
+		Screen->AddSetting(DLCSubsection);
+
+		AddDLCPage(DLCSubsection, InLocalPlayer);
+	}
+	//----------------------------------------------------------------------------------
+
 	return Screen;
 }
 
